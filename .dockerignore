@@ -1,0 +1,6 @@
+.git
+.herenow
+node_modules
+test-results
+.env*
+site/*.zip

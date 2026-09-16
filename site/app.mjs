@@ -1,8 +1,10 @@
 import { ADVERTISING, UART, TX, apiFromName, BoardTransport, BoardPlayer, quantize } from './protocol.mjs?v=3';
 import { EFFECTS, makeFrame, mapPoints, cornerFrame, colorAt, gravityPhase } from './effects.mjs?v=2';
+import { connectionSupport } from './compatibility.mjs?v=4';
 
 const $ = id => document.getElementById(id);
 const canvas = $('board'), ctx = canvas.getContext('2d');
+const support = connectionSupport({ userAgent:navigator.userAgent, platform:navigator.platform, maxTouchPoints:navigator.maxTouchPoints, bluetooth:Boolean(navigator.bluetooth), secure:isSecureContext });
 let boards = [], board, points = [], effect = 'tour';
 let time = 5, lastTime = performance.now(), previewing = false;
 let device = null, transport = null, player = null, wakeLock = null;
@@ -10,7 +12,7 @@ let busy = false, testing = false, lastSent = null, testFrame = null;
 let writes = 0, startedAt = 0, sendRate = 0;
 let stopPending = null, actionId = 0, viewCleared = false, pendingChangeAt = null;
 let lastChangeMs = null, needsRender = true;
-const saved = (() => { try { return JSON.parse(localStorage.getItem('kilter-trip') || '{}'); } catch { return {}; } })();
+const saved = (() => { try { return JSON.parse(localStorage.getItem('rave-board') || localStorage.getItem('kilter-trip') || '{}'); } catch { return {}; } })();
 
 function status(message, error = false) {
   $('status').textContent = message;
@@ -21,7 +23,7 @@ function isRunning() { return Boolean(player?.running); }
 function updateControls() {
   needsRender = true;
   const connected = isConnected(), running = isRunning();
-  $('connect').disabled = !board || busy || connected || !navigator.bluetooth || points.length < 4;
+  $('connect').disabled = !board || busy || connected || !support.canConnect || points.length < 4;
   $('connect').innerHTML = connected ? 'Board connected <span>✓</span>' : busy ? 'Working…' : 'Connect board <span>↗</span>';
   $('test').disabled = !connected || running || busy;
   $('play').disabled = !connected || running || busy;
@@ -37,14 +39,15 @@ function updateControls() {
   $('preview').disabled = running || busy || !board;
 }
 function save() {
-  try { localStorage.setItem('kilter-trip', JSON.stringify({ boardId: board.id, sets: selectedSets() })); } catch {}
+  try { localStorage.setItem('rave-board', JSON.stringify({ boardId: board.id, sets: selectedSets() })); } catch {}
 }
 function selectedSets() { return [...$('sets').querySelectorAll('input:checked')].map(el => Number(el.value)); }
 function updatePoints() {
   points = mapPoints(board, selectedSets());
   $('led-count').textContent = `${points.length} LED HOLDS`;
+  $('board-summary').textContent = `${board.family} · ${board.name}`;
   if (points.length < 4) status('Select at least one installed hold set.');
-  else status('Choose your wall, then connect. Connecting alone will not change its lights.');
+  else status(support.canConnect ? 'Preview an effect, or connect when you’re at the wall.' : 'Preview ready. Pick an effect to begin.');
   updateControls(); save();
 }
 function chooseBoard(id, initial = false) {
@@ -105,7 +108,7 @@ for (const e of EFFECTS) {
   const title = document.createElement('strong'); title.textContent = e.name;
   if (e.id === 'gravity' || e.id === 'purgatory') {
     const art = document.createElement('img'); art.alt = '';
-    art.src = e.id === 'gravity' ? 'assets/gravity-lab.webp' : 'assets/purgatory-mark.svg';
+    art.src = e.id === 'gravity' ? '/assets/gravity-lab.webp' : '/assets/purgatory-mark.svg';
     button.append(art, title);
   } else button.append(tile, title);
   button.addEventListener('click', () => pickEffect(e.id));
@@ -189,7 +192,7 @@ function failed(error) {
 }
 
 $('connect').addEventListener('click', async () => {
-  if (!navigator.bluetooth) return;
+  if (!support.canConnect) return;
   actionId++;
   busy = true; updateControls();
   status('Select your gym’s Kilter Board in the Bluetooth picker.');
@@ -278,14 +281,23 @@ document.addEventListener('visibilitychange', () => {
 });
 window.addEventListener('pagehide', () => { player?.abandon(); device?.gatt?.disconnect(); });
 
-if (!navigator.bluetooth) {
+if (support.message) {
   $('compatibility').hidden = false;
-  $('compatibility').innerHTML = 'Preview works here. To connect, use Chrome or Edge on a Windows/Mac laptop, Chrome on Android, or <a href="https://apps.apple.com/us/app/bluefy-web-ble-browser/id1492822055">Bluefy on iPhone</a>.';
+  $('compatibility').dataset.kind = support.kind;
+  const heading = document.createElement('h2'); heading.textContent = support.title;
+  const body = document.createElement('p'); body.textContent = support.message;
+  $('compatibility').replaceChildren(heading, body);
+}
+if (!support.canConnect) {
+  $('connect').hidden = true; $('play').hidden = true;
+  document.querySelector('.control-dock').classList.add('preview-only');
 }
 try {
-  const response = await fetch('./boards.json');
+  const response = await fetch('/boards.json');
   if (!response.ok) throw new Error('Hold maps could not be downloaded');
   const data = await response.json(); boards = data.boards;
   const chosen = boards.find(b => b.id === saved.boardId) || boards.find(b => b.id === 10);
   $('layout').value = chosen.family; chooseFamily(chosen.family, chosen.id, true);
+  const requested = new URLSearchParams(location.search).get('effect');
+  if (requested === 'tour' || EFFECTS.some(e => e.id === requested)) pickEffect(requested);
 } catch (error) { status(`Could not load board maps: ${error.message}. Reload the page with an internet connection.`, true); }

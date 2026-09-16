@@ -1,6 +1,7 @@
 {
-  "name": "kilter-trip",
+  "name": "rave-board",
   "private": true,
   "type": "module",
-  "scripts": { "test": "node --test test/*.test.mjs" }
+  "engines": { "node": ">=24" },
+  "scripts": { "start": "node server.mjs", "test": "node --test test/*.test.mjs" }
 }

@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><meta name="theme-color" content="#0a0910">
+  <title>Rave — Rave Board</title><meta name="description" content="Pick a light show, set the speed, and connect to your Kilter Board. Thirteen built-in effects and a preview you can play with anywhere.">
+  <link rel="icon" href="/favicon.svg"><link rel="stylesheet" href="/style.css?v=4"><link rel="stylesheet" href="/website.css?v=4">
+</head>
+<body>
+  <a class="skip-link" href="#main-content">Skip to content</a>
+  <main class="rave-page">
+    <header class="site-header"><a class="wordmark" href="/" aria-label="Rave Board home"><img src="/favicon.svg" alt="" width="32" height="32"> RAVE BOARD</a><nav aria-label="Main navigation"><a href="/">Home</a><a href="/about">About</a><a href="/rave" class="nav-rave" aria-current="page">Rave <span aria-hidden="true">↗</span></a></nav></header>
+    <section class="rave-intro" id="main-content"><div><div class="eyebrow"><span></span> THE RAVE ROOM</div><h1>Find your <em>frequency.</em></h1></div><p>Pick a pattern. Set the mood.<br>Connect when you’re at the wall.</p></section>
+    <aside id="compatibility" class="browser-notice" role="status" hidden></aside>
+    <div class="studio">
+      <section class="stage" aria-label="Light show preview">
+        <div class="stage-top"><span id="preview-label">ON-SCREEN PREVIEW</span><span id="led-count">LOADING HOLD MAP…</span></div>
+        <div class="canvas-wrap"><canvas id="board" aria-label="Animated colors at actual Kilter hold positions"></canvas></div>
+        <div class="stage-bottom"><div><span class="tiny">NOW EXPLORING</span><strong id="effect-title">The full trip</strong></div><button id="preview" class="small-button">▶ Preview</button></div>
+        <div class="stage-caption"><span id="effect-note">An automatic tour through color, rain, lasers, logos and space.</span><span class="hardware-note">Board motion may be slower than the preview.</span></div>
+      </section>
+      <div class="controls">
+        <section class="panel setup"><div class="section-label"><span>YOUR WALL</span><span id="connection-badge" class="badge">PREVIEW ONLY</span></div>
+          <details class="board-settings"><summary><span id="board-summary">Original · 12×12 with kickboard</span><span class="tiny">CHANGE</span></summary>
+            <label for="layout">Board layout</label><select id="layout" disabled><option value="Original">Kilter Original</option><option value="Homewall">Kilter Homewall</option></select>
+            <label for="size">Size / LED kit</label><select id="size" disabled></select>
+            <fieldset id="sets"><legend>Installed hold sets</legend></fieldset>
+          </details>
+          <div class="setup-helper"><button id="test" class="text-button" disabled>Test corners</button><a href="/about#how">Connection help ↗</a></div>
+        </section>
+        <section class="panel effect-panel"><div class="section-label"><span>PICK YOUR TRIP</span><span class="tiny">13 EFFECTS + AUTO TOUR</span></div>
+          <button id="tour" class="tour selected" aria-pressed="true"><span class="tour-icon">✳</span><span><strong>The full trip</strong><small>A little of everything, automatically.</small></span><span class="arrow">↗</span></button>
+          <div class="slider-row speed-control"><label for="speed">Speed <output id="speed-value">1.0×</output></label><input id="speed" type="range" min="0.1" max="32" step="0.1" value="1"><div class="range-ends"><span>0.1× · slow melt</span><span>32× · full rave</span></div></div>
+          <div id="effects" class="effects"></div>
+          <div id="message-controls" hidden><label for="message">Put it on the wall</label><input id="message" type="text" maxlength="40" value="SEND IT!" placeholder="SEND IT!" autocomplete="off"><p class="quiet">Up to 40 letters, numbers, or basic punctuation.</p></div>
+          <div class="slider-row"><label for="brightness">Brightness <output id="brightness-value">85%</output></label><input id="brightness" type="range" min="35" max="100" step="1" value="85"></div>
+          <details class="advanced"><summary>Connection settings</summary>
+            <label for="protocol">Controller protocol</label><select id="protocol"><option value="auto">Auto — recommended</option><option value="3">API 3 — newer controllers</option><option value="2">API 2 — older controllers</option></select>
+            <label for="fps">Target updates per second</label><select id="fps"><option value="30">30 fps — default</option><option value="60">60 fps — maximum target</option><option value="15">15 fps</option><option value="4">4 fps</option></select>
+            <label for="pacing">Bluetooth pacing</label><select id="pacing"><option value="0">Fast — default</option><option value="6">Balanced</option><option value="15">Gentle — try if glitchy</option></select>
+            <p class="quiet">If the board connects but stays dark, disconnect and try API 3. Actual update speed depends on its controller.</p>
+          </details>
+        </section>
+      </div>
+      <section class="control-dock" aria-label="Playback controls">
+        <div class="dock-top"><div id="status" class="status" role="status" aria-live="polite">Loading board maps…</div><button id="disconnect" class="disconnect" hidden>Disconnect now</button></div>
+        <div class="dock-buttons"><button id="connect" class="connect" disabled>Connect board <span>↗</span></button><button id="play" class="play" disabled>▶ Play on board</button><button id="stop" class="stop" disabled>■ Stop & clear</button></div>
+      </section>
+    </div>
+    <p class="rave-note">Get your gym’s okay, keep the wall clear, and keep this page visible while playing. <a href="/about#how">First time? Here’s how it works.</a></p>
+    <footer class="site-footer"><span>RAVE BOARD · MADE FOR THE SPACE BETWEEN SENDS.</span><div><a href="/about">About & help</a><span>Independent. Not affiliated with Kilter.</span></div></footer>
+  </main>
+  <script type="module" src="/app.mjs?v=4"></script>
+</body>
+</html>
