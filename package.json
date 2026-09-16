@@ -2,6 +2,22 @@
   "name": "rave-board",
   "private": true,
   "type": "module",
-  "engines": { "node": ">=24" },
-  "scripts": { "start": "node server.mjs", "test": "node --test test/*.test.mjs" }
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "start": "node server.mjs",
+    "test": "node --test test/*.test.mjs"
+  },
+  "version": "0.1.0",
+  "description": "Browser light shows for Kilter climbing boards over Web Bluetooth.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sleechie/rave-board.git"
+  },
+  "homepage": "https://raveboard.up.railway.app/",
+  "bugs": {
+    "url": "https://github.com/sleechie/rave-board/issues"
+  }
 }

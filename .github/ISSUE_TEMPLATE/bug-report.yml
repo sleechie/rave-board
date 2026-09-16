@@ -1,0 +1,27 @@
+name: Bug or hardware report
+description: Report a reproducible problem or share a real-board test.
+body:
+  - type: textarea
+    id: behavior
+    attributes:
+      label: What happened?
+      description: Include what you expected and steps to reproduce it.
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Browser and app
+      description: OS, browser version, app URL or commit, and whether this is preview-only or a physical-board test.
+    validations:
+      required: true
+  - type: textarea
+    id: board
+    attributes:
+      label: Board and settings
+      description: If applicable, include layout/size, hold sets, API level, effect, pattern version, speed, brightness and reply mode. Leave device serial numbers out.
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence
+      description: Status text, sent frames/sec, visible behavior, screenshot or video. Label browser previews and time-lapses. Include whether Conservative mode behaves differently.
