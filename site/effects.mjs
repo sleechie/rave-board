@@ -1,10 +1,10 @@
-import { LOGO_MASKS } from './logo-masks.mjs?v=2';
-import { cleanMessage, letterPixel, textDuration } from './lettering.mjs?v=2';
+import { cleanMessage, letterPixel, textDuration } from './lettering.mjs?v=6';
+import { gravityColor, gravityPhase } from './gravity.mjs?v=6';
+export { gravityPhase };
 
 export const EFFECTS = [
   { id: 'rain', name: 'Make it rain', note: 'Falling green lights with long trails', hue: 125, category: 'new' },
-  { id: 'gravity', name: 'Gravity Lab', note: 'The flask logo alternates with scrolling GRAVITY LAB text', hue: 60, category: 'new' },
-  { id: 'purgatory', name: 'Purgatory', note: 'The Purgatory logo with falling snow', hue: 350, category: 'new' },
+  { id: 'gravity', name: 'Gravity Lab', note: 'Large scrolling letters, then GRAVITY above LAB', hue: 60, category: 'new' },
   { id: 'lasers', name: 'Laser cathedral', note: 'Crossing neon beams sweep the wall', hue: 310, category: 'new' },
   { id: 'warp', name: 'Hyperspace', note: 'Colored streaks moving out from the center', hue: 190, category: 'new' },
   { id: 'fireworks', name: 'Fireworks', note: 'Expanding bursts of color', hue: 25, category: 'new' },
@@ -20,54 +20,22 @@ const TAU = Math.PI * 2;
 const fract = x => x - Math.floor(x);
 const hash = n => fract(Math.sin(n * 127.1 + 311.7) * 43758.5453);
 const scaled = (rgb, intensity) => rgb.map(v => Math.max(0, Math.min(255, Math.round(v * intensity))));
-const BLUE = [75, 135, 255], YELLOW = [232, 255, 35], WHITE = [230, 245, 255];
-
-function maskAt(mask, u, v) {
-  if (u < 0 || u >= 1 || v < 0 || v >= 1) return 0;
-  const x = Math.floor(u * mask.width), y = Math.floor(v * mask.height);
-  return Number(mask.cells[y * mask.width + x]);
-}
-function rainAt(x, y, t, intensity, snow = false) {
+function rainAt(x, y, t, intensity) {
   const column = Math.floor((x + 1) * 10);
   const speed = 0.28 + hash(column + 8) * 0.38;
   const head = 1.15 - fract(t * speed * 0.3 + hash(column + 17)) * 2.8;
   const behind = y - head;
-  const tail = snow ? 0.10 : 0.25 + hash(column + 53) * 0.35;
+  const tail = 0.25 + hash(column + 53) * 0.35;
   if (behind < -0.07 || behind > tail) return [0, 0, 0];
   const light = behind < 0.05 ? 1 : Math.max(0, 1 - behind / tail) ** 1.3;
-  return scaled(snow ? [130, 205, 255] : behind < 0.05 ? [145, 255, 165] : [0, 245, 35], light * intensity);
-}
-export function gravityPhase(time, columns = 17) {
-  const duration = textDuration('GRAVITY LAB', columns);
-  const phase = ((time % (8 + duration)) + 8 + duration) % (8 + duration);
-  return phase < 8 ? { mode: 'logo', time: phase } : { mode: 'text', time: phase - 8 };
+  return scaled(behind < 0.05 ? [145, 255, 165] : [0, 245, 35], light * intensity);
 }
 
 function specialColor(id, x, y, time, intensity, options) {
   const point = options.point || { x, y };
   switch (id) {
     case 'rain': return rainAt(x, y, time, intensity);
-    case 'gravity': {
-      const phase = gravityPhase(time, point.textWidth);
-      if (phase.mode === 'text') {
-        const pixel = letterPixel('GRAVITY LAB', point, phase.time);
-        if (!pixel) return [0,0,0];
-        return scaled(pixel.character >= 8 ? YELLOW : pixel.row < 2 ? WHITE : BLUE, intensity);
-      }
-      const code = maskAt(LOGO_MASKS.gravity, (x + .87) / 1.74, (.93 - y) / 1.82);
-      if (!code) return [0,0,0];
-      const reveal = phase.time > 6 ? 1 - (phase.time - 6) / 2 : 1;
-      const sweep = Math.exp(-(((y - (1.1 - (phase.time % 4) * .65)) / .11) ** 2));
-      return scaled(code === 2 ? YELLOW : code === 3 ? WHITE : BLUE, intensity * reveal * (.8 + .2 * sweep));
-    }
-    case 'purgatory': {
-      const code = maskAt(LOGO_MASKS.purgatory, (x + .88) / 1.76, (.58 - y) / .96);
-      if (code) {
-        const shimmer = .85 + .15 * Math.sin(x * 4 - time * .6) ** 2;
-        return scaled(code === 3 ? WHITE : [255, 16, 65], intensity * shimmer);
-      }
-      return rainAt(x, y, time * .7, intensity * .75, true);
-    }
+    case 'gravity': return gravityColor(point,time,intensity);
     case 'marquee': {
       const message = cleanMessage(options.message);
       const pixel = letterPixel(message, point, time % textDuration(message, point.textWidth));
@@ -162,7 +130,7 @@ export function colorAt(id, x, y, time, intensity = 1, options = {}) {
   return hsv(h, 0.96, v * intensity);
 }
 
-const TOUR = ['vortex','rain','plasma','lasers','gravity','kaleido','warp','purgatory','fireworks','tunnel','aurora','liquid'];
+export const TOUR = ['vortex','rain','plasma','lasers','gravity','kaleido','warp','fireworks','tunnel','aurora','liquid'];
 export function makeFrame(points, effect, time, brightness = 1, options = {}) {
   let id = effect, next, mix = 0, sceneTime = time;
   if (effect === 'tour') {

@@ -1,4 +1,4 @@
-import { colorAt, mapPoints, makeFrame } from './effects.mjs?v=5';
+import { colorAt, mapPoints, makeFrame } from './effects.mjs?v=6';
 const boardCanvas=document.getElementById('home-board'), context=boardCanvas.getContext('2d');
 const toggle=document.getElementById('home-motion');
 let moving=!matchMedia('(prefers-reduced-motion: reduce)').matches, points=[], time=5, last=performance.now(), lastPaint=0, dirty=true;

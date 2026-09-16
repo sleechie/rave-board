@@ -1,6 +1,6 @@
 # Rave Board
 
-A browser-based psychedelic light show for Kilter Original and Homewall LED boards. Thirteen effects plus an automatic tour: green Matrix-style rain, Gravity Lab, Purgatory, laser cathedral, hyperspace, fireworks, a custom scrolling message, rainbow vortex, acid plasma, kaleidoscope, cosmic tunnel, neon tide, and liquid dream. Works through the existing Bluetooth controller; no firmware changes or extra hardware.
+A browser-based psychedelic light show for Kilter Original and Homewall LED boards. Twelve effects plus an automatic tour: green Matrix-style rain, Gravity Lab, laser cathedral, hyperspace, fireworks, a custom scrolling message, rainbow vortex, acid plasma, kaleidoscope, cosmic tunnel, neon tide, and liquid dream. Works through the existing Bluetooth controller; no firmware changes or extra hardware.
 
 ## At the gym (laptop recommended)
 
@@ -9,7 +9,7 @@ A browser-based psychedelic light show for Kilter Original and Homewall LED boar
 3. Disconnect the official Kilter app and any other device controlling the wall. Use the lights with the gym's permission and nobody climbing.
 4. Click **Connect board**, choose the nearby board, and allow Bluetooth. Connecting does not send any lights.
 5. Click **Test corners**. Expect pink top left, cyan top right, yellow bottom left, green bottom right. If the pattern is wrong, Stop & clear, disconnect, and correct the size/hold sets.
-6. Choose **The full trip** or an individual effect, then **Play on board**. One **0.1×–32× speed slider** controls every animation, including logo and text sequences. Speed 1× and brightness 85% are the defaults. Click an effect to start its on-screen preview. Keep the tab visible, Bluetooth in range, and the laptop awake.
+6. Choose **Cycle effects** or an individual effect, then **Play on board**. One **0.1×–32× speed slider** controls every animation, including the Gravity Lab sequence. Speed 1× and brightness 85% are the defaults. Click an effect to start its on-screen preview. Keep the tab visible, Bluetooth in range, and the laptop awake.
 7. **Stop & clear lights** discards the unfinished frame after its current short packet and sends a clear command. It shows how long sending took. **Disconnect now** immediately releases Bluetooth, including during a stalled write; it does not guarantee the lights are cleared. Stop & clear first when possible, then disconnect and return to the Kilter app.
 
 Android Chrome board connections are quietly enabled when Web Bluetooth is available, but remain experimental. iPhone and iPad are preview-only in this public release, including specialist browsers. The Rave page explains that policy and does not offer a board connection on iOS.
@@ -17,12 +17,11 @@ Android Chrome board connections are quietly enabled when Web Bluetooth is avail
 ## New effects and speed
 
 - **Make it rain:** staggered falling green heads and fading tails.
-- **Gravity Lab:** the gym’s actual flask/climber emblem alternates with **GRAVITY LAB** scrolling in blue, white, and electric yellow. The lettering uses the Original board’s regular handhold grid; selected screw-on holds stay dark during text for readability. At 1× the logo lasts 8 seconds, followed by one complete message pass. The global speed slider scales the entire cycle.
-- **Purgatory:** the resort’s actual mountain mark with falling snow.
+- **Gravity Lab:** large, thick GRAVITY LAB letters scroll for 20 seconds at 1x, followed by a 12-second two-line display with GRAVITY scrolling on top and a large LAB fixed below. The blue/white/yellow faces have darker edges and an offset shadow. A few twinkles stay outside the text. Both handholds and selected screw-ons contribute to the lettering. The global speed slider scales the whole sequence.
 - **Laser cathedral / Hyperspace / Send fireworks:** moving neon beams, outward streaks, and colored bursts.
-- **Say something:** enter up to 40 letters/numbers or basic punctuation for your own scrolling sign.
+- **Scrolling text:** enter up to 40 letters/numbers or basic punctuation for your own scrolling sign.
 
-The **0.1×–32×** slider controls visual motion, independently of Bluetooth throughput. Logo lettering may be difficult to read at high speeds; the same slider lets you slow it down. The original colorful effects remain available. Logo artwork and provenance are in [assets/SOURCES.md](assets/SOURCES.md).
+The **0.1×–32×** slider controls visual motion, independently of Bluetooth throughput. Logo lettering may be difficult to read at high speeds; the same slider lets you slow it down. The original colorful effects remain available. The Gravity Lab palette is based on the gym's blue, white, and yellow branding.
 
 ## Quick Controls update (003)
 

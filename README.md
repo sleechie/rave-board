@@ -1,6 +1,6 @@
 # Rave Board
 
-A colorful Bluetooth light-show player for Kilter Boards, with thirteen animated effects and a crossfading tour.
+A colorful Bluetooth light-show player for Kilter Boards, with twelve animated effects and a crossfading tour.
 
 Public website: https://raveboard.up.railway.app/
 

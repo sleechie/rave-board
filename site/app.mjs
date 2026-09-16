@@ -1,5 +1,5 @@
 import { ADVERTISING, UART, TX, apiFromName, BoardTransport, BoardPlayer, quantize } from './protocol.mjs?v=3';
-import { EFFECTS, makeFrame, mapPoints, cornerFrame, colorAt, gravityPhase } from './effects.mjs?v=5';
+import { EFFECTS, makeFrame, mapPoints, cornerFrame, colorAt, gravityPhase } from './effects.mjs?v=6';
 import { connectionSupport } from './compatibility.mjs?v=4';
 
 const $ = id => document.getElementById(id);
@@ -102,15 +102,11 @@ for (const e of EFFECTS) {
   const tile = document.createElement('canvas'); tile.width = 180; tile.height = 80; tile.setAttribute('aria-hidden','true');
   const t = tile.getContext('2d');
   for (let y = 0; y < 80; y += 4) for (let x = 0; x < 180; x += 4) {
-    const c = colorAt(e.id, (x / 180 - 0.5) * 2, (0.5 - y / 80) * 1.5, 4, 0.95);
+    const c = colorAt(e.id, (x / 180 - 0.5) * 2, (0.5 - y / 80) * (e.id === 'gravity' ? 2 : 1.5), e.id === 'gravity' ? 24 : 4, 0.95);
     t.fillStyle = `rgb(${c.join(',')})`; t.fillRect(x, y, 3, 3);
   }
   const title = document.createElement('strong'); title.textContent = e.name;
-  if (e.id === 'gravity' || e.id === 'purgatory') {
-    const art = document.createElement('img'); art.alt = '';
-    art.src = e.id === 'gravity' ? '/assets/gravity-lab.webp' : '/assets/purgatory-mark.svg';
-    button.append(art, title);
-  } else button.append(tile, title);
+  button.append(tile, title);
   button.addEventListener('click', () => pickEffect(e.id));
   $('effects').append(button);
 }
@@ -128,8 +124,8 @@ function render(now) {
   const dt = Math.min((now - lastTime) / 1000, 0.15); lastTime = now;
   if (previewing || isRunning()) time += dt * Number($('speed').value);
   if (effect === 'gravity') {
-    $('effect-note').textContent = gravityPhase(time, points[0]?.textWidth).mode === 'logo'
-      ? 'Flask logo. Scrolling text follows.' : 'GRAVITY LAB, in blue, white, and yellow.';
+    $('effect-note').textContent = gravityPhase(time).mode === 'scroll'
+      ? 'Large scrolling letters. The two-line display follows.' : 'GRAVITY scrolls above LAB, with a slow pulse.';
   }
   if (board) {
     const rect = canvas.getBoundingClientRect();

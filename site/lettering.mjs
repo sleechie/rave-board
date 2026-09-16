@@ -22,6 +22,7 @@ const ROWS = {
  '.':['00000','00000','00000','00000','00000','00100','00100'],'-':['00000','00000','00000','11111','00000','00000','00000'],
  ' ':['00000','00000','00000','00000','00000','00000','00000'],
 };
+export { ROWS as FONT_5X7 };
 export function cleanMessage(message = 'SEND IT!') {
   return String(message).toUpperCase().replace(/[^A-Z0-9 !?.-]/g,' ').slice(0,40).trim() || 'SEND IT!';
 }

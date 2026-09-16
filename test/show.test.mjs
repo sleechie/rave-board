@@ -2,8 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { encodeFrame, apiFromName, BoardTransport, BoardPlayer, delay } from '../site/protocol.mjs';
-import { EFFECTS, makeFrame, mapPoints, cornerFrame, gravityPhase } from '../site/effects.mjs';
-import { cleanMessage, textDuration } from '../site/lettering.mjs';
+import { EFFECTS, TOUR, makeFrame, mapPoints, cornerFrame, gravityPhase } from '../site/effects.mjs';
+import { cleanMessage } from '../site/lettering.mjs';
 
 // A receiving-side packet decoder. Checks packet boundaries, checksum, markers,
 // LED ordering and color bits independently of the sender's implementation.
@@ -45,9 +45,9 @@ test('matches the independent published Grip Connect API 2 and 3 wire fixtures',
 });
 
 const data = JSON.parse(fs.readFileSync(new URL('../site/boards.json',import.meta.url)));
-test('all 16 maps produce valid replacement frames for both controller versions and all 14 modes', () => {
+test('all 16 maps produce valid replacement frames for both controller versions and all 13 modes', () => {
   assert.equal(data.boards.length,16);
-  assert.equal(EFFECTS.length,13);
+  assert.equal(EFFECTS.length,12);
   for (const board of data.boards) {
     const points = mapPoints(board,board.sets.map(s=>s.id));
     assert.ok(points.length >= 100);
@@ -82,23 +82,35 @@ test('sparse frames omit only wire-black LEDs and replace stale lights on both A
   }
 });
 
-test('Gravity Lab alternates original emblem and readable GRAVITY LAB letters on handholds', () => {
+test('Gravity Lab uses taller filled letters and a two-line phase with a steady LAB shape', () => {
   const points=mapPoints(data.boards.find(b=>b.id===10),[1,20]);
-  const mark=makeFrame(points,'gravity',0,1);
-  const lit=mark.filter(p=>p.rgb.some(c=>c>0));
-  assert.ok(lit.length>60 && lit.length<points.length*.7);
-  assert.equal(gravityPhase(0).mode,'logo');assert.equal(gravityPhase(12).mode,'text');
-  assert.equal(gravityPhase(8+textDuration('GRAVITY LAB')).mode,'logo');
-  const letters=makeFrame(points,'gravity',8+17/4,1);
-  const byPosition=new Map(letters.map(p=>[p.position,p.rgb]));
-  const expected=['01110','10001','10000','10111','10001','10001','01110'];
-  for(let row=0;row<7;row++)for(let col=0;col<5;col++) {
-    const hold=points.find(p=>p.textX===col && p.textY===row+6);
-    assert.ok(hold,'Handhold grid must be complete');
-    assert.equal(byPosition.get(hold.position).some(c=>c>0),expected[row][col]==='1',`G pixel ${col},${row}`);
+  assert.equal(gravityPhase(0).mode,'scroll');assert.equal(gravityPhase(19.99).mode,'scroll');
+  assert.equal(gravityPhase(20).mode,'stacked');assert.equal(gravityPhase(31.99).mode,'stacked');
+  assert.equal(gravityPhase(32).mode,'scroll');
+  const letters=makeFrame(points,'gravity',1.8,.85);
+  const bright=points.filter((p,i)=>p.v>.12 && p.v<.86 && letters[i].rgb[1]>100 && letters[i].rgb[2]>100);
+  assert.ok(bright.length>90,'Tall strokes should occupy substantially more holds');
+  assert.ok(Math.max(...bright.map(p=>p.v))-Math.min(...bright.map(p=>p.v))>.60,'Letters fill most of the height');
+  assert.ok(bright.filter(p=>p.textX===-1).length>20,'Screw-ons fill out the strokes');
+  assert.ok(new Set(letters.map(p=>p.rgb.join(','))).size>10,'Face, edge, and shadow have distinct colors');
+  const reference=makeFrame(points,'gravity',24,.85);
+  const lab=points.map((p,i)=>({p,i})).filter(({p,i})=>p.v>.56&&p.v<.94&&reference[i].rgb[0]>130&&reference[i].rgb[1]>150&&reference[i].rgb[2]<150);
+  assert.ok(lab.length>45,'LAB occupies the lower half');
+  for(const t of [20,21,23,25,28,31]){
+    const frame=makeFrame(points,'gravity',t,.85);
+    assert.ok(lab.every(({i})=>frame[i].rgb[0]>100&&frame[i].rgb[1]>120),'LAB stays legible throughout its pulse');
   }
-  assert.ok(points.filter(p=>p.textX===-1).every(p=>byPosition.get(p.position).every(c=>c===0)));
-  assert.equal(cleanMessage('<hello> 💚'), 'HELLO');
+  assert.equal(cleanMessage('<hello>'), 'HELLO');
+});
+
+test('removed Purgatory cannot be selected or reached by the automatic cycle',()=>{
+  assert.ok(!EFFECTS.some(e=>e.id==='purgatory'));
+  assert.ok(!TOUR.includes('purgatory'));
+  assert.ok(TOUR.every(id=>EFFECTS.some(e=>e.id===id)));
+  const points=mapPoints(data.boards.find(b=>b.id===10),[1,20]);
+  for(let i=0;i<TOUR.length;i++)for(const offset of [0,20,31.9]){
+    assert.equal(makeFrame(points,'tour',i*32+offset).length,points.length);
+  }
 });
 
 test('fast player removes the old 4 fps ceiling while keeping stop final', async () => {
