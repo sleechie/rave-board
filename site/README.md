@@ -10,7 +10,7 @@ A browser-based psychedelic light show for Kilter Original and Homewall LED boar
 4. Click **Connect board**, choose the nearby board, and allow Bluetooth. Connecting does not send any lights.
 5. Click **Test corners**. Expect pink top left, cyan top right, yellow bottom left, green bottom right. If the pattern is wrong, Stop & clear, disconnect, and correct the size/hold sets.
 6. Choose **The full trip** or an individual effect, then **Play on board**. One **0.1×–32× speed slider** controls every animation, including logo and text sequences. Speed 1× and brightness 85% are the defaults. Click an effect to start its on-screen preview. Keep the tab visible, Bluetooth in range, and the laptop awake.
-7. **Stop & clear lights** completes any frame in flight before sending the clear command. Then **Disconnect Bluetooth** and return to the Kilter app.
+7. **Stop & clear lights** discards the unfinished frame after its current short packet and sends a clear command. It shows how long sending took. **Disconnect now** immediately releases Bluetooth, including during a stalled write; it does not guarantee the lights are cleared. Stop & clear first when possible, then disconnect and return to the Kilter app.
 
 Android Chrome also supports the connection. On iPhone/iPad use [Bluefy](https://apps.apple.com/us/app/bluefy-web-ble-browser/id1492822055); Safari and ordinary Chrome on iOS cannot use Web Bluetooth. Bluefy support is based on its documented API, not a physical iPhone/board test.
 
@@ -24,6 +24,15 @@ Android Chrome also supports the connection. On iPhone/iPad use [Bluefy](https:/
 
 The **0.1×–32×** slider controls visual motion, independently of Bluetooth throughput. Logo lettering may be difficult to read at high speeds; the same slider lets you slow it down. The original colorful effects remain available. Logo artwork and provenance are in [assets/SOURCES.md](assets/SOURCES.md).
 
+## Quick Controls update (003)
+
+- Stop takes over after the current complete packet of at most 60 bytes, rather than a complete wall image. An empty ONLY packet clears the receiver; an effect change begins a new FIRST/ONLY packet. We never cut a packet in half.
+- Rapid effect, brightness, speed, and text edits supersede obsolete work; only the latest selection continues. A sleeping animation loop wakes for the change.
+- Where the controller supports acknowledged writes, each packet ends with one. That acknowledgement confirms Bluetooth receipt, not visible LED output. Controllers supporting only writes without response remain supported.
+- A stalled packet fails after a 1.5-second sending budget instead of allowing a five-second wait for each individual write. Disconnect now bypasses the clear queue and closes the connection immediately. A dropped connection can leave the last image lit.
+- The preview goes dark on Stop and avoids repeatedly drawing an unchanged transmitted frame, leaving more browser time for input.
+- Change/clear timings in the status line measure sending from the laptop, not physical LED latency. Smaller packets add about 9% framing overhead on a dense 476-hold frame.
+
 ## If it does not work
 
 - No board in the chooser: get closer, turn on laptop Bluetooth, and release the connection in the Kilter app/other phones.
@@ -35,7 +44,7 @@ The **0.1×–32×** slider controls visual motion, independently of Bluetooth t
 
 ## Verification and limits
 
-No physical Kilter Board was available during development. Software tests check exact reference packets for both Aurora API levels, every bundled map/effect through an independent receiving-side decoder, stop-during-write ordering, 20-byte chunking, write serialization, disconnection failures, and old browser write fallback. Browser checks validate the hosted controls and a simulated Bluetooth device; they do not establish real hardware compatibility. Bluetooth hardware, firmware, operating system and radio conditions determine actual results.
+Animation playback and scrolling Gravity Lab text have been reported working on a physical Kilter Original board. Stop and effect changes were reported sluggish; the Quick Controls update addresses those paths but still needs a physical board retest. Existing lightweight software checks cover reference packets, all bundled maps/effects, packet-boundary cancellation, latest-selection behavior, acknowledgement placement, and disconnect handling. No separate simulator is required or added. Bluetooth hardware, firmware, operating system and radio conditions determine actual response time.
 
 Older API 2 controllers have 2 bits per RGB channel; API 3 uses 3/3/2 bits. The preview quantizes colors accordingly. These are rolling color patterns, with no explicit strobe effect, but the low-color LED hardware still produces discrete color changes.
 

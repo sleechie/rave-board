@@ -110,7 +110,7 @@ test('fast player removes the old 4 fps ceiling while keeping stop final', async
   const count=times.length;await delay(100);assert.equal(times.length,count);
 });
 
-test('stopping mid-frame clears AFTER the entire frame, without interleaved writes or later relighting', async () => {
+test('stop finishes only the current 60-byte packet, then clears without later relighting', async () => {
   const writes = []; let active=0, maxActive=0, began;
   const firstWrite = new Promise(resolve => { began=resolve; });
   const transport = new BoardTransport({properties:{writeWithoutResponse:true},writeValueWithoutResponse:async chunk=>{
@@ -123,8 +123,51 @@ test('stopping mid-frame clears AFTER the entire frame, without interleaved writ
   assert.equal(maxActive,1);
   assert.ok(writes.every(c=>c.length<=20));
   const decoded=decode(writes.flat(),3);
-  assert.equal(decoded.length,2); assert.equal(decoded[0].length,300); assert.deepEqual(decoded[1],[]);
+  assert.deepEqual(decoded,[[]]);
+  assert.equal(writes.flat().length,66,'One 60-byte packet plus a 6-byte clear');
+  assert.equal(writes.length,4,'Only three old writes are allowed before clear');
   const count=writes.length; await delay(300); assert.equal(writes.length,count);
+});
+
+test('rapid effect changes discard obsolete frames and send only the latest selection', async () => {
+  for (const level of [2,3]) {
+    const writes=[], shown=[];
+    let player, stop, first=true;
+    let selected=Array.from({length:300},(_,position)=>({position,rgb:[255,0,0]}));
+    const middle=[{position:501,rgb:[0,255,0]}], newest=[{position:601,rgb:[0,0,255]}];
+    const transport=new BoardTransport({properties:{writeWithoutResponse:true},writeValueWithoutResponse:async chunk=>{
+      writes.push([...chunk]);
+      if (first) { first=false; selected=middle; player.refresh(); selected=newest; player.refresh(); }
+    }},level);
+    player=new BoardPlayer(transport,()=>selected,frame=>{shown.push(frame);stop=player.stop();});
+    player.start();await player.done;await stop;
+    assert.deepEqual(shown,[newest]);
+    const frames=decode(writes.flat(),level);
+    assert.equal(frames.length,2);
+    assert.deepEqual(frames[0].map(p=>p.position),[601]);assert.deepEqual(frames[1],[]);
+  }
+});
+
+test('acknowledgements are requested at packet boundaries when supported', async () => {
+  const writes=[];
+  const transport=new BoardTransport({properties:{write:true,writeWithoutResponse:true},
+    writeValueWithoutResponse:async chunk=>writes.push({mode:'fast',bytes:[...chunk]}),
+    writeValueWithResponse:async chunk=>writes.push({mode:'ack',bytes:[...chunk]}),
+  },3);
+  await transport.send(Array.from({length:40},(_,position)=>({position,rgb:[255,0,0]})));
+  assert.deepEqual(writes.map(w=>w.mode),['fast','fast','ack','fast','fast','ack','ack']);
+  assert.equal(decode(writes.flatMap(w=>w.bytes),3)[0].length,40);
+});
+
+test('immediate disconnect releases a pending write and blocks subsequent sends', async () => {
+  let began;const started=new Promise(resolve=>{began=resolve;});
+  const transport=new BoardTransport({properties:{writeWithoutResponse:true},writeValueWithoutResponse:()=>{
+    began();return new Promise(()=>{});
+  }},3);
+  const pending=transport.send([{position:1,rgb:[255,0,0]}]);
+  await started;transport.close();
+  await assert.rejects(pending,/disconnected/);
+  await assert.rejects(transport.send([]),/disconnected/);
 });
 
 test('a failed write closes the transport and does not claim a successful clear', async () => {

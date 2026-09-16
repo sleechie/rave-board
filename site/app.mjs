@@ -1,4 +1,4 @@
-import { ADVERTISING, UART, TX, apiFromName, BoardTransport, BoardPlayer, quantize } from './protocol.mjs?v=2';
+import { ADVERTISING, UART, TX, apiFromName, BoardTransport, BoardPlayer, quantize } from './protocol.mjs?v=3';
 import { EFFECTS, makeFrame, mapPoints, cornerFrame, colorAt, gravityPhase } from './effects.mjs?v=2';
 
 const $ = id => document.getElementById(id);
@@ -8,6 +8,8 @@ let time = 5, lastTime = performance.now(), previewing = false;
 let device = null, transport = null, player = null, wakeLock = null;
 let busy = false, testing = false, lastSent = null, testFrame = null;
 let writes = 0, startedAt = 0, sendRate = 0;
+let stopPending = null, actionId = 0, viewCleared = false, pendingChangeAt = null;
+let lastChangeMs = null, needsRender = true;
 const saved = (() => { try { return JSON.parse(localStorage.getItem('kilter-trip') || '{}'); } catch { return {}; } })();
 
 function status(message, error = false) {
@@ -17,19 +19,20 @@ function status(message, error = false) {
 function isConnected() { return Boolean(device?.gatt?.connected && transport && !transport.closed); }
 function isRunning() { return Boolean(player?.running); }
 function updateControls() {
+  needsRender = true;
   const connected = isConnected(), running = isRunning();
   $('connect').disabled = !board || busy || connected || !navigator.bluetooth || points.length < 4;
   $('connect').innerHTML = connected ? 'Board connected <span>✓</span>' : busy ? 'Working…' : 'Connect board <span>↗</span>';
   $('test').disabled = !connected || running || busy;
   $('play').disabled = !connected || running || busy;
-  $('stop').disabled = !connected || busy;
+  $('stop').disabled = (!connected && !previewing) || Boolean(stopPending);
   $('disconnect').hidden = !connected;
-  $('disconnect').disabled = busy;
+  $('disconnect').disabled = false;
   for (const id of ['layout','size','protocol','pacing']) $(id).disabled = connected || busy || !board;
   for (const input of $('sets').querySelectorAll('input')) input.disabled = connected || busy;
   $('connection-badge').textContent = connected ? running ? 'TRANSMITTING' : 'CONNECTED' : 'PREVIEW ONLY';
   $('connection-badge').classList.toggle('live', connected);
-  $('preview-label').textContent = running ? 'LAST FRAME SENT TO BOARD' : testing ? 'CORNER TEST' : 'ON-SCREEN PREVIEW';
+  $('preview-label').textContent = stopPending ? 'STOPPING' : viewCleared ? 'STOPPED' : running ? 'LAST FRAME SENT TO BOARD' : testing ? 'CORNER TEST' : 'ON-SCREEN PREVIEW';
   $('preview').textContent = previewing ? 'Ⅱ Pause preview' : '▶ Preview';
   $('preview').disabled = running || busy || !board;
 }
@@ -69,7 +72,7 @@ function chooseFamily(family, id, initial = false) {
 }
 
 function pickEffect(id) {
-  effect = id; testing = false; testFrame = null;
+  effect = id; testing = false; testFrame = null; viewCleared = false;
   time = id === 'marquee' ? 4 : 0;
   if (!isRunning()) previewing = true;
   $('effect-title').textContent = id === 'tour' ? 'The full trip' : EFFECTS.find(e => e.id === id).name;
@@ -79,7 +82,15 @@ function pickEffect(id) {
     const active = (el.dataset.effect || 'tour') === id;
     el.classList.toggle('selected', active); el.setAttribute('aria-pressed', String(active));
   }
+  requestUpdate();
   updateControls();
+}
+function requestUpdate() {
+  needsRender = true;
+  if (!isRunning()) return;
+  pendingChangeAt = performance.now(); lastChangeMs = null;
+  player.refresh();
+  status('Applying your latest change…');
 }
 for (const e of EFFECTS) {
   const button = document.createElement('button');
@@ -103,10 +114,11 @@ for (const e of EFFECTS) {
 $('tour').addEventListener('click', () => pickEffect('tour'));
 $('layout').addEventListener('change', () => chooseFamily($('layout').value));
 $('size').addEventListener('change', () => chooseBoard($('size').value));
-$('speed').addEventListener('input', () => { $('speed-value').textContent = Number($('speed').value).toFixed(2).replace(/0$/,'') + '×'; });
-$('brightness').addEventListener('input', () => { $('brightness-value').textContent = $('brightness').value + '%'; });
-$('message').addEventListener('input', () => { if (!isRunning()) previewing = true; updateControls(); });
-$('preview').addEventListener('click', () => { previewing = !previewing; testing = false; updateControls(); });
+$('speed').addEventListener('input', () => { $('speed-value').textContent = Number($('speed').value).toFixed(2).replace(/0$/,'') + '×'; requestUpdate(); });
+$('brightness').addEventListener('input', () => { $('brightness-value').textContent = $('brightness').value + '%'; requestUpdate(); });
+$('fps').addEventListener('change', requestUpdate);
+$('message').addEventListener('input', () => { if (!isRunning()) previewing = true; viewCleared = false; requestUpdate(); updateControls(); });
+$('preview').addEventListener('click', () => { previewing = !previewing; testing = false; viewCleared = false; updateControls(); });
 
 function currentFrame() { return makeFrame(points, effect, time, Number($('brightness').value) / 100, { message: $('message').value }); }
 function render(now) {
@@ -121,7 +133,11 @@ function render(now) {
     const dpr = Math.min(devicePixelRatio || 1, 2);
     if (canvas.width !== Math.round(rect.width * dpr) || canvas.height !== Math.round(rect.height * dpr)) {
       canvas.width = Math.round(rect.width * dpr); canvas.height = Math.round(rect.height * dpr);
+      needsRender = true;
     }
+    const movingPreview = previewing && !isRunning() && !testing && !viewCleared;
+    if (!needsRender && !movingPreview) { requestAnimationFrame(render); return; }
+    needsRender = false;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     const w = rect.width, h = rect.height;
     ctx.clearRect(0, 0, w, h);
@@ -129,7 +145,7 @@ function render(now) {
     const bh = Math.min(h-28, (w-28)/aspect), bw = bh*aspect, ox = (w-bw)/2, oy = (h-bh)/2;
     ctx.strokeStyle='#ffffff0b'; ctx.lineWidth=1;
     ctx.strokeRect(ox-6,oy-6,bw+12,bh+12);
-    const frame = testing && testFrame ? testFrame : isRunning() && lastSent ? lastSent : currentFrame();
+    const frame = viewCleared ? [] : testing && testFrame ? testFrame : isRunning() && lastSent ? lastSent : currentFrame();
     const colors = new Map(frame.map(p => [p.position, quantize(p.rgb, transport?.level || 3)]));
     const radius = Math.max(2.2, Math.min(6, bw / 75));
     for (const p of points) {
@@ -155,13 +171,16 @@ async function releaseAwake() {
   wakeLock = null;
   try { navigator.bluetooth?.setScreenDimEnabled?.(true); } catch {}
 }
-function lostConnection() {
+function lostConnection(event) {
+  if (event?.target && event.target !== device) return;
+  actionId++; stopPending = null; pendingChangeAt = null;
   player?.abandon(); transport?.close();
   testing = false; previewing = false; busy = false;
   releaseAwake(); updateControls();
   status('Bluetooth disconnected. The last frame may still be lit. Reconnect here or use the Kilter app to replace it.', true);
 }
 function failed(error) {
+  actionId++; stopPending = null; pendingChangeAt = null; busy = false;
   player?.abandon(); transport?.close();
   if (device?.gatt?.connected) device.gatt.disconnect();
   testing = false; previewing = false;
@@ -171,6 +190,7 @@ function failed(error) {
 
 $('connect').addEventListener('click', async () => {
   if (!navigator.bluetooth) return;
+  actionId++;
   busy = true; updateControls();
   status('Select your gym’s Kilter Board in the Bluetooth picker.');
   let candidate;
@@ -186,12 +206,17 @@ $('connect').addEventListener('click', async () => {
     const characteristic = await service.getCharacteristic(TX);
     device = candidate;
     device.addEventListener('gattserverdisconnected', lostConnection);
-    transport = new BoardTransport(characteristic, level, failed, Number($('pacing').value));
+    const connectionFailed = error => { if (device === candidate) failed(error); };
+    transport = new BoardTransport(characteristic, level, connectionFailed, Number($('pacing').value));
     player = new BoardPlayer(transport, currentFrame, (frame, bytes, duration) => {
-      lastSent = frame; writes++;
+      if (device !== candidate) return;
+      lastSent = frame; writes++; needsRender = true;
       sendRate = writes / ((performance.now()-startedAt)/1000);
-      status(`Playing · ${sendRate.toFixed(1)} frames/sec sent · ${bytes} bytes/frame · target ${$('fps').value} fps. Actual speed depends on the controller.`);
-    }, failed, () => Number($('fps').value));
+      if (pendingChangeAt !== null) lastChangeMs = Math.round(performance.now() - pendingChangeAt);
+      const change = lastChangeMs === null ? '' : ` Change sent in ${lastChangeMs} ms.`;
+      pendingChangeAt = null;
+      status(`Playing · ${sendRate.toFixed(1)} frames/sec sent · ${bytes} bytes/frame.${change} Actual speed depends on the controller.`);
+    }, connectionFailed, () => Number($('fps').value));
     status(`Connected to ${candidate.name || 'board'} · API ${level}. Test corners to check the map, then Play on board.`);
   } catch (error) {
     candidate?.gatt?.disconnect();
@@ -201,37 +226,52 @@ $('connect').addEventListener('click', async () => {
 });
 
 $('test').addEventListener('click', async () => {
+  const request = ++actionId;
   busy = true; updateControls();
   try {
     testFrame = cornerFrame(points);
-    await transport.send(testFrame);
-    testing = true; previewing = false;
+    const bytes = await transport.send(testFrame);
+    if (request !== actionId || bytes === null) return;
+    testing = true; previewing = false; viewCleared = false;
     status('Check corners: top left PINK · top right CYAN · bottom left YELLOW · bottom right GREEN. If wrong, clear and choose a different size.');
-  } catch (error) { failed(error); }
-  finally { busy = false; updateControls(); }
+  } catch (error) { if (request === actionId) failed(error); }
+  finally { if (request === actionId) { busy = false; updateControls(); } }
 });
 $('play').addEventListener('click', () => {
+  actionId++; viewCleared = false; pendingChangeAt = null; lastChangeMs = null;
   testing = false; previewing = false; lastSent = null; writes = 0; startedAt = performance.now();
   player.start(); keepAwake(); updateControls();
   status('Sending the first full frame…');
 });
-async function stopShow(message = 'Stopped. A clear-lights command was sent. You can pick another effect or disconnect.') {
-  if (!isConnected() || busy) return;
-  busy = true; previewing = false; testing = false; updateControls();
-  status('Stopping… finishing the current frame, then clearing the lights.');
-  try { await player.stop(); lastSent = null; status(message); }
-  catch (error) { failed(error); }
-  finally { busy = false; await releaseAwake(); updateControls(); }
+function stopShow(message = 'Stopped.') {
+  if (stopPending) return stopPending;
+  previewing = false; testing = false; viewCleared = true; pendingChangeAt = null;
+  if (!isConnected()) { status('Preview stopped.'); updateControls(); return Promise.resolve(); }
+  const request = ++actionId, start = performance.now();
+  busy = true;
+  status('Stopping… clearing after the current short packet. Disconnect now is available if needed.');
+  stopPending = player.stop().then(() => {
+    if (request !== actionId) return;
+    lastSent = null;
+    status(`${message} Clear command sent in ${Math.round(performance.now() - start)} ms. This measures sending, not confirmation from the LEDs.`);
+  }).catch(error => { if (request === actionId) failed(error); }).finally(() => {
+    if (request !== actionId) return;
+    busy = false; stopPending = null; releaseAwake(); updateControls();
+  });
+  updateControls();
+  return stopPending;
 }
 $('stop').addEventListener('click', () => stopShow());
-$('disconnect').addEventListener('click', async () => {
-  if (busy) return;
+$('disconnect').addEventListener('click', () => {
   const departing = device;
-  await stopShow();
+  actionId++; stopPending = null; pendingChangeAt = null;
+  busy = false; previewing = false; testing = false;
+  player?.abandon(); transport?.close();
   departing?.removeEventListener('gattserverdisconnected', lostConnection);
-  transport?.close(); departing?.gatt?.disconnect();
+  departing?.gatt?.disconnect();
   device = null; transport = null; player = null;
-  status('Disconnected. Reconnect using the Kilter app when you’re ready to climb.'); updateControls();
+  releaseAwake();
+  status('Disconnected immediately. The last picture may remain lit; reconnect here or in the Kilter app to replace it.'); updateControls();
 });
 document.addEventListener('visibilitychange', () => {
   if (document.hidden && isRunning()) stopShow('Show stopped because this tab was hidden. Press Play to start again.');
