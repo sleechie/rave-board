@@ -10,6 +10,7 @@ $('pattern').value='gravity';
 const mobileControls=matchMedia('(max-width:620px)');
 function placeAnimationControl(){
   $(mobileControls.matches?'mobile-animation-slot':'animation-slot').append($('animation-control'));
+  $(mobileControls.matches?'mobile-version-slot':'version-slot').append($('version-control'));
 }
 placeAnimationControl();mobileControls.addEventListener('change',placeAnimationControl);
 const support=connectionSupport({userAgent:navigator.userAgent,platform:navigator.platform,maxTouchPoints:navigator.maxTouchPoints,bluetooth:Boolean(navigator.bluetooth),secure:isSecureContext});

@@ -25,7 +25,7 @@ Three canvases compare the previews:
 
 All three share the selected effect, speed, brightness, time, pause, restart, clear and installed hold sets. Test corners is displayed across all three. The Original / Adapted choice still controls the first two previews and actual Bluetooth output. During board playback the shaped preview uses the adapted frame from the same animation instant as the completed transmitted frame.
 
-On mobile, the single animation dropdown moves into the fixed bottom controls so effects can be changed while watching any preview. It returns to the settings section on larger screens. No duplicate dropdown or separate selection state is used.
+On mobile, the animation dropdown and Original / Adapted toggle move into the fixed bottom controls so effects and versions can be changed while watching the previews. Both return to the settings section on larger screens. The existing controls are moved without duplicate inputs or separate selection state; hold shapes continues to show the adapted version.
 
 Shapes load only for the selected board, from this service. All 476 holds on the 12×12-with-kickboard have outlines. The 7×10, 8×12, 12×12 without kickboard and 16×12 layouts also have complete shape maps. The 12×14 source is missing 51 outlines; those use approximate rings and the caption reports that count. A failed shape download leaves the existing previews usable and displays a message in the third panel.
 
