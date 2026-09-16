@@ -1,4 +1,5 @@
 import { EFFECTS,TOUR,mapPoints,makeFrame as originalFrame,hsv,gravityPhase } from './baseline/effects.mjs';
+import { CLIMBER,climberFrame } from './climber.mjs';
 import { letterPixel,cleanMessage,textDuration } from './baseline/lettering.mjs';
 
 const NOTES={
@@ -16,6 +17,7 @@ const NOTES={
   liquid:'Large color pools on the bolt-ons, with moving contour lines through the screw-ons.',
 };
 export const PATTERNS=[
+  CLIMBER,
   ...EFFECTS.map(effect=>({id:effect.id,name:effect.name,note:NOTES[effect.id]})),
   {id:'tour',name:'Cycle effects',note:'Cycles through the adapted patterns, including each design’s screw-on details.'},
 ];
@@ -210,6 +212,7 @@ function adaptedColor(p,pattern,time,brightness,options) {
 export function frameFor(points,pattern,variant,time,brightness=1,options={}) {
   if(!PATTERNS.some(p=>p.id===pattern))throw Error('Unknown experiment pattern');
   if(!['original','adapted'].includes(variant))throw Error('Unknown pattern version');
+  if(pattern==='climber')return climberFrame(points,time,brightness,variant==='adapted');
   if(variant==='original')return originalFrame(points,pattern,time,brightness,options);
   let id=pattern,next,mix=0,sceneTime=time;
   if(pattern==='tour') {

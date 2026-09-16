@@ -33,10 +33,11 @@ Geometry sources, pinned revisions, changes and limitations: `site/HOLD-SHAPES-N
 
 The **Original / Adapted** choice changes the actual colors sent to the board:
 
-Every one of the 12 production animations is available in both versions, plus the automatic cycle. **Original** calls the frozen production animation directly, including custom scrolling text. **Adapted** gives both hold sets a deliberate part in the pattern; it does not apply a blanket brightness reduction to screw-ons.
+The 12 original production animations and the new Climber scene is available in both versions, plus the automatic cycle. **Original** calls the frozen production animation directly, including custom scrolling text. **Adapted** gives both hold sets a deliberate part in the pattern; it does not apply a blanket brightness reduction to screw-ons.
 
 | Animation | Adapted use of the smaller screw-ons |
 | --- | --- |
+| Climber | Green limb details, a moving trail and finer sparks during the ground-up burst |
 | Gravity Lab | Colored stitching and highlights around the main letters, plus twinkles |
 | Scrolling text | Colored edges on tall letters, with an editable message |
 | Make it rain | Independent bright droplets and connecting trails |
@@ -64,3 +65,5 @@ Railway root directory: `/experiments/hold-sizes`; source: `sleechie/kilter-trip
 When requested, delete only the **hold-size-lab** Railway service and the **experiment/hold-sizes** branch/worktree. Do not delete the project or production service. The whole experiment is one folder and no production file changes are needed to remove it. No cleanup of databases or user records is required.
 
 This is not a Bluetooth hardware simulator. The controls use the same frozen sender as the main app. Preview comparisons and software checks do not establish physical-board behavior.
+
+Climber repeats every 32 seconds at 1×: climb (0–18s), hang (18–20s), fall (20–22s), ground-up burst (22–28s), then fading embers. It has both Original and Adapted versions.

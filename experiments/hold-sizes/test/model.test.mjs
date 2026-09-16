@@ -24,8 +24,8 @@ test('Original classifications survive filtering, and do not leak to Homewall',(
 });
 
 test('Original variant matches the current app exactly for every included layout',()=>{
-  assert.deepEqual(PATTERNS.map(p=>p.id),[...EFFECTS.map(p=>p.id),'tour']);
-  for(const b of boards)for(const setIds of [[1,20],[1],[20]])for(const pattern of PATTERNS){
+  assert.deepEqual(PATTERNS.map(p=>p.id),['climber',...EFFECTS.map(p=>p.id),'tour']);
+  for(const b of boards)for(const setIds of [[1,20],[1],[20]])for(const pattern of PATTERNS.filter(p=>p.id!=='climber')){
     for(const time of [4,24,31.9,32]){
       const options={message:'CLIMB 42!'};
       assert.deepEqual(frameFor(buildPoints(b,setIds),pattern.id,'original',time,.85,options),makeFrame(mapPoints(b,setIds),pattern.id,time,.85,options));
