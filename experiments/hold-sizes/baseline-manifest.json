@@ -1,0 +1,10 @@
+{
+  "sourceCommit": "171728a2d1334a1532f67d36ae727fb952295518",
+  "files": {
+    "protocol.mjs": "edde34f02099d30b37af780ab42f3f143188552507d4b8b6859064b9a8e04121",
+    "compatibility.mjs": "ac3e2a7a9fbc1f82afe2cfcb61ca098e051ee7c0f46538c950745bcc98af188d",
+    "effects.mjs": "2d3491ad0c9cd70043d28ba84200d92ee813ed875079d7979d36237ddb7e7390",
+    "gravity.mjs": "b13ee62f8a4df63b76b78c5756dad38418d4e9ca9e69a5aabb9a0926204c8f06",
+    "lettering.mjs": "11e683ecc7c98649cc74b73f78166609b4e8e154b11daf255e84d9602fb46dff"
+  }
+}
