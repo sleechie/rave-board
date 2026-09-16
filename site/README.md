@@ -34,7 +34,7 @@ The **0.1×–32×** slider controls visual motion, independently of Bluetooth t
 
 - Stop takes over after the current complete packet of at most 60 bytes, rather than a complete wall image. An empty ONLY packet clears the receiver; an effect change begins a new FIRST/ONLY packet. We never cut a packet in half.
 - Rapid effect, brightness, speed, and text edits supersede obsolete work; only the latest selection continues. A sleeping animation loop wakes for the change.
-- Where the controller supports acknowledged writes, each packet ends with one. That acknowledgement confirms Bluetooth receipt, not visible LED output. Controllers supporting only writes without response remain supported.
+- On API 3 controllers exposing both modern write methods, the default **Fewer replies** mode acknowledges the final chunk of each complete image instead of every short packet. Clears still request a reply, and cancellation still finishes at a short packet boundary. A reply confirms a GATT write, not visible LED output. API 2, write-only, and legacy clients retain the previous behavior; no-response-only devices continue with no-response writes.
 - A stalled packet fails after a 1.5-second sending budget instead of allowing a five-second wait for each individual write. Disconnect now bypasses the clear queue and closes the connection immediately. A dropped connection can leave the last image lit.
 - The preview goes dark on Stop and avoids repeatedly drawing an unchanged transmitted frame, leaving more browser time for input.
 - Change/clear timings in the status line measure sending from the laptop, not physical LED latency. Smaller packets add about 9% framing overhead on a dense 476-hold frame.
@@ -44,7 +44,7 @@ The **0.1×–32×** slider controls visual motion, independently of Bluetooth t
 - No board in the chooser: get closer, turn on laptop Bluetooth, and release the connection in the Kilter app/other phones.
 - Connected but dark: open Connection settings after disconnecting. Auto reads a trailing `@2` or `@3` in the board name and defaults to API 2 when absent. Try API 3 if the controller doesn't advertise a version. Unknown versions are refused.
 - Wrong positions: select the exact layout, size, LED kit and installed hold sets. Hardware discovery cannot automatically identify your layout.
-- Partial/glitchy frames: disconnect, change Bluetooth pacing to Gentle and try again. Fast is now the default and removes the added delay; every GATT write is still awaited.
+- Partial/glitchy frames: disconnect and try **Connection settings → Bluetooth replies → Conservative (previous sender)**. Bluetooth pacing can also be changed to Gentle; every GATT write is still awaited.
 - Slow animations: the controller receives a full board each frame, in 20-byte writes. The default target is 30 frames/sec, but the measured rate may be much lower. Turn Speed down for a slower evolving show. The connected preview displays the last completely transmitted frame.
 - Switching tabs automatically attempts to stop and clear. Closing the browser or losing Bluetooth can leave the last image lit because no clear command can be guaranteed. Reconnect with the Kilter app and send a climb to replace it.
 
@@ -81,3 +81,11 @@ npm test
 ```
 
 Regenerate the bundled LED maps from a current Grip Connect checkout with `python3 scripts/import-boards.py /path/to/hangtime-grip-connect`. Only public geometry is extracted; no accounts, climbs or login data are bundled.
+
+## Fewer replies trial
+
+The default sender now requests one acknowledgement per complete image on compatible API 3 controllers. It keeps the existing 55-byte packet-body limit and 20-byte BLE chunks, so only the reply policy changes. This is an independent implementation informed by comparing Off The Wall’s public sender; no third-party implementation is copied. An interrupted packet requests a reply at its ending if the interruption is already known; a subsequent clear always requests one when supported. The sender still serializes writes and waits for the final response before starting another image.
+
+For the same dense 476-hold API 3 image, software checks confirm identical 1,590 bytes in 80 writes, with explicit reply requests reduced from 27 to 1. This is a write-policy count, not measured hardware throughput. Fewer intermediate replies may allow more buffering below the browser, so physical Stop latency must be checked along with frame rate.
+
+At the gym, compare **Fewer replies** with **Conservative (previous sender)** using the same effect, version, brightness, motion speed and pacing. Stop, disconnect, change the reply setting, and reconnect between trials. Compare the reported sending rate and visible motion, then check Stop & clear and effect switching. The existing sender remains available if the new policy gives no improvement or worsens control response. The isolated hold-size lab retains its frozen sender.

@@ -1,4 +1,4 @@
-import { ADVERTISING, UART, TX, apiFromName, BoardTransport, BoardPlayer, quantize } from './protocol.mjs?v=3';
+import { ADVERTISING, UART, TX, apiFromName, BoardTransport, BoardPlayer, quantize } from './protocol.mjs?v=4';
 import { EFFECTS, makeFrame, mapPoints, cornerFrame, colorAt, gravityPhase } from './effects.mjs?v=7';
 import { PATTERNS,buildPoints,frameFor } from './patterns.mjs?v=7';
 import { loadHoldShapes,drawHoldShapes } from './hold-view.mjs?v=7';
@@ -34,13 +34,16 @@ function updateControls() {
   $('stop').disabled = (!connected && !previewing) || Boolean(stopPending);
   $('disconnect').hidden = !connected;
   $('disconnect').disabled = false;
-  for (const id of ['layout','size','protocol','pacing']) $(id).disabled = connected || busy || !board;
+  for (const id of ['layout','size','protocol','pacing','reply-mode']) $(id).disabled = connected || busy || !board;
   for (const input of $('sets').querySelectorAll('input')) input.disabled = connected || busy;
   $('connection-badge').textContent = connected ? running ? 'Playing' : 'Connected' : 'Preview only';
   $('connection-badge').classList.toggle('live', connected);
   $('preview-label').textContent = stopPending ? 'Stopping' : viewCleared ? 'Stopped' : running ? 'Last frame sent' : testing ? 'Corner test' : 'Preview';
   $('preview').textContent = previewing ? 'Pause preview' : 'Preview';
   $('preview').disabled = running || busy || !board;
+  $('reply-note').textContent = connected
+    ? transport.frameReplies ? 'Using fewer replies: one at the end of each image.' : 'Using the previous reply policy for this connection.'
+    : 'Uses fewer replies on compatible API 3 controllers. Conservative restores the previous sender. Disconnect before changing this setting.';
   $('version-label').textContent=version()==='adapted'?'Adapted':'Original';
   $('effect-note').textContent=effect==='tour'?'Plays the built-in effects in sequence.':(version()==='adapted'?PATTERNS:EFFECTS).find(e=>e.id===effect).note;
   updateShapeNote();
@@ -243,7 +246,7 @@ $('connect').addEventListener('click', async () => {
     device = candidate;
     device.addEventListener('gattserverdisconnected', lostConnection);
     const connectionFailed = error => { if (device === candidate) failed(error); };
-    transport = new BoardTransport(characteristic, level, connectionFailed, Number($('pacing').value));
+    transport = new BoardTransport(characteristic, level, connectionFailed, Number($('pacing').value), $('reply-mode').value);
     player = new BoardPlayer(transport, currentFrame, frame => {
       if (device !== candidate) return;
       lastSent = frame; writes++; needsRender = true;

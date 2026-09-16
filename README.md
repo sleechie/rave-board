@@ -21,3 +21,5 @@ Railway uses the root Dockerfile and `railway.json`, with `/healthz` for readine
 Software checks cover packet formatting and cancellation, mobile connection policy, and HTTP routing. The latest stop/switch changes still need a physical-board retest; mobile layout checks are not Bluetooth hardware validation.
 
 Kilter Original now defaults to adapted patterns and traced hold shapes. Original patterns and the dot viewer remain selectable. Animation and pattern-version controls stay pinned on mobile. Climber is a 32-second climb, fall and ground-up burst, also included in Cycle effects. Homewall retains its original patterns and dots.
+
+Connection settings now includes a **Bluetooth replies** trial: the default reduces reply waits on compatible API 3 controllers, and **Conservative** restores the prior sender. Software checks passed; actual throughput and visible Stop latency still require a gym test.

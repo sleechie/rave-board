@@ -142,15 +142,16 @@ test('stop finishes only the current 60-byte packet, then clears without later r
 });
 
 test('rapid effect changes discard obsolete frames and send only the latest selection', async () => {
-  for (const level of [2,3]) {
+  for (const level of [2,3]) for (const replyMode of ['frame','packet']) {
     const writes=[], shown=[];
     let player, stop, first=true;
     let selected=Array.from({length:300},(_,position)=>({position,rgb:[255,0,0]}));
     const middle=[{position:501,rgb:[0,255,0]}], newest=[{position:601,rgb:[0,0,255]}];
-    const transport=new BoardTransport({properties:{writeWithoutResponse:true},writeValueWithoutResponse:async chunk=>{
+    const write=async chunk=>{
       writes.push([...chunk]);
       if (first) { first=false; selected=middle; player.refresh(); selected=newest; player.refresh(); }
-    }},level);
+    };
+    const transport=new BoardTransport({properties:{write:true,writeWithoutResponse:true},writeValueWithoutResponse:write,writeValueWithResponse:write},level,()=>{},0,replyMode);
     player=new BoardPlayer(transport,()=>selected,frame=>{shown.push(frame);stop=player.stop();});
     player.start();await player.done;await stop;
     assert.deepEqual(shown,[newest]);
@@ -160,15 +161,90 @@ test('rapid effect changes discard obsolete frames and send only the latest sele
   }
 });
 
-test('acknowledgements are requested at packet boundaries when supported', async () => {
-  const writes=[];
+test('fewer replies changes only acknowledgements; conservative keeps the previous sender', async () => {
+  const frame=Array.from({length:476},(_,position)=>({position,rgb:[255,0,0]})),results=[];
+  for(const replyMode of ['frame','packet']){
+    const writes=[];
+    const transport=new BoardTransport({properties:{write:true,writeWithoutResponse:true},
+      writeValueWithoutResponse:async chunk=>writes.push({mode:'fast',bytes:[...chunk]}),
+      writeValueWithResponse:async chunk=>writes.push({mode:'ack',bytes:[...chunk]}),
+    },3,()=>{},0,replyMode);
+    const bytes=await transport.send(frame);
+    assert.equal(writes.length,80);assert.equal(bytes,1590);
+    assert.ok(writes.every(w=>w.bytes.length<=20));
+    assert.equal(writes.filter(w=>w.mode==='ack').length,replyMode==='frame'?1:27);
+    assert.equal(writes.at(-1).mode,'ack');
+    results.push(writes.flatMap(w=>w.bytes));
+    assert.equal(decode(results.at(-1),3)[0].length,476);
+  }
+  assert.deepEqual(results[0],results[1],'both modes send identical LED data');
+});
+
+test('a final response must complete before the next frame can start', async()=>{
+  const writes=[];let release,atReply;
+  const pending=new Promise(resolve=>{release=resolve;}),reached=new Promise(resolve=>{atReply=resolve;});
+  let first=true;
   const transport=new BoardTransport({properties:{write:true,writeWithoutResponse:true},
-    writeValueWithoutResponse:async chunk=>writes.push({mode:'fast',bytes:[...chunk]}),
+    writeValueWithoutResponse:async chunk=>writes.push([...chunk]),
+    writeValueWithResponse:async chunk=>{writes.push([...chunk]);if(first){first=false;atReply();await pending;}},
+  },3);
+  const firstSend=transport.send(Array.from({length:40},(_,position)=>({position,rgb:[255,0,0]})));
+  await reached;const count=writes.length;
+  const nextSend=transport.send([{position:601,rgb:[0,255,0]}]);
+  await delay(10);assert.equal(writes.length,count);
+  release();await firstSend;await nextSend;
+  const frames=decode(writes.flat(),3);
+  assert.equal(frames[0].length,40);assert.deepEqual(frames[1].map(p=>p.position),[601]);
+});
+
+test('stop in fewer-replies mode finishes one short packet and acknowledges clear', async()=>{
+  const writes=[];let began,release;
+  const firstWrite=new Promise(resolve=>{began=resolve;}),pending=new Promise(resolve=>{release=resolve;});
+  let first=true;
+  const transport=new BoardTransport({properties:{write:true,writeWithoutResponse:true},
+    writeValueWithoutResponse:async chunk=>{writes.push({mode:'fast',bytes:[...chunk]});if(first){first=false;began();await pending;}},
     writeValueWithResponse:async chunk=>writes.push({mode:'ack',bytes:[...chunk]}),
   },3);
-  await transport.send(Array.from({length:40},(_,position)=>({position,rgb:[255,0,0]})));
-  assert.deepEqual(writes.map(w=>w.mode),['fast','fast','ack','fast','fast','ack','ack']);
-  assert.equal(decode(writes.flatMap(w=>w.bytes),3)[0].length,40);
+  const player=new BoardPlayer(transport,()=>Array.from({length:476},(_,position)=>({position,rgb:[0,255,0]})));
+  player.start();await firstWrite;const stopping=player.stop();release();await stopping;await player.done;
+  assert.equal(writes.length,4);assert.equal(writes.at(-1).mode,'ack');
+  assert.deepEqual(decode(writes.flatMap(w=>w.bytes),3),[[]]);
+  await delay(30);assert.equal(writes.length,4,'stopped frames cannot relight');
+});
+
+test('API 2 and write-only controllers retain their previous reply behavior', async()=>{
+  for(const level of [2,3])for(const withoutResponse of [false,true]){
+    if(level===3&&withoutResponse)continue;
+    const writes=[];
+    const transport=new BoardTransport({properties:{write:true,writeWithoutResponse:withoutResponse},
+      writeValueWithoutResponse:async()=>writes.push('fast'),writeValueWithResponse:async()=>writes.push('ack'),
+    },level);
+    assert.equal(transport.frameReplies,false);
+    await transport.send(Array.from({length:60},(_,position)=>({position,rgb:[255,0,0]})));
+    if(!withoutResponse)assert.ok(writes.every(mode=>mode==='ack'));
+    else assert.deepEqual(writes,['fast','fast','ack','fast','fast','ack','ack']);
+  }
+});
+
+test('a failed final reply does not mark a frame sent and blocks queued writes', async()=>{
+  let replies=0,failures=0,shown=0;
+  const transport=new BoardTransport({properties:{write:true,writeWithoutResponse:true},
+    writeValueWithoutResponse:async()=>{},writeValueWithResponse:async()=>{replies++;throw Error('Final reply failed');},
+  },3,()=>{failures++;});
+  const player=new BoardPlayer(transport,()=>Array.from({length:40},(_,position)=>({position,rgb:[0,255,0]})),()=>shown++);
+  player.start();await player.done;
+  assert.equal(shown,0);assert.equal(replies,1);assert.equal(failures,1);
+  await assert.rejects(transport.send([],{control:true}),/disconnected/);
+});
+
+test('immediate disconnect also releases a stalled final reply', async()=>{
+  let began;const started=new Promise(resolve=>{began=resolve;});
+  const transport=new BoardTransport({properties:{write:true,writeWithoutResponse:true},
+    writeValueWithoutResponse:async()=>{},writeValueWithResponse:()=>{began();return new Promise(()=>{});},
+  },3);
+  const sending=transport.send([{position:1,rgb:[255,0,0]}]);await started;
+  const clear=transport.send([],{control:true});transport.close();
+  await assert.rejects(sending,/disconnected/);await assert.rejects(clear,/disconnected/);
 });
 
 test('immediate disconnect releases a pending write and blocks subsequent sends', async () => {

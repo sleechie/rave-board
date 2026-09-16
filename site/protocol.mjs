@@ -59,11 +59,18 @@ export const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 const yieldForInput = () => globalThis.scheduler?.yield ? globalThis.scheduler.yield() : delay(0);
 
 export class BoardTransport {
-  constructor(characteristic, level, onFailure = () => {}, gapMs = 0) {
+  constructor(characteristic, level, onFailure = () => {}, gapMs = 0, replyMode = 'frame') {
+    if (!['frame', 'packet'].includes(replyMode)) throw new Error('Unknown Bluetooth reply mode');
     this.characteristic = characteristic;
     this.level = level;
     this.onFailure = onFailure;
     this.gapMs = gapMs;
+    // Use the faster policy only where both modern write methods are supported.
+    // Older API 2, write-only, and legacy clients retain the previous behavior.
+    this.frameReplies = replyMode === 'frame' && level === 3
+      && Boolean(characteristic.properties?.write && characteristic.properties?.writeWithoutResponse)
+      && typeof characteristic.writeValueWithResponse === 'function'
+      && typeof characteristic.writeValueWithoutResponse === 'function';
     this.tail = Promise.resolve();
     this.closed = false;
     this.revision = 0;
@@ -74,8 +81,8 @@ export class BoardTransport {
   interrupt() { this.revision++; }
   send(leds, { control = false } = {}) {
     const revision = this.revision;
-    // At most 60 bytes = three BLE writes before a control change can take over.
-    // This adds about 9% framing overhead to a dense 476-hold frame.
+    // Keep short packets so cancellation can finish the current packet instead
+    // of the whole image. Fast mode changes only the reply policy, not encoding.
     const packets = encodePackets(leds, this.level, { omitDark: true, maxBodyLength: 55 });
     const op = this.tail.then(async () => {
       if (this.closed) throw new Error('Board disconnected. Reconnect before sending.');
@@ -87,7 +94,9 @@ export class BoardTransport {
           for (let i = 0; i < packet.length; i += 20) {
             if (this.closed) throw new Error('Board disconnected during a packet.');
             const endOfPacket = i + 20 >= packet.length;
-            await this.writeChunk(packet.slice(i, i + 20), endOfPacket, deadline - performance.now());
+            const requestResponse = endOfPacket && (!this.frameReplies || control
+              || packet === packets.at(-1) || revision !== this.revision);
+            await this.writeChunk(packet.slice(i, i + 20), requestResponse, deadline - performance.now());
             sent += Math.min(20, packet.length - i);
             if (!control && this.gapMs && !endOfPacket) await delay(this.gapMs);
           }
@@ -104,14 +113,14 @@ export class BoardTransport {
     this.tail = op.catch(() => {});
     return op;
   }
-  async writeChunk(chunk, endOfPacket, timeoutMs) {
+  async writeChunk(chunk, requestResponse, timeoutMs) {
     if (timeoutMs <= 0) throw new Error('Bluetooth stalled. Reconnect and try again.');
     const c = this.characteristic;
     let timer;
     try {
-      // An acknowledged write at each packet boundary limits how far the sender
-      // can run ahead when the controller supports it. It is not an LED receipt.
-      const write = endOfPacket && c.properties?.write && typeof c.writeValueWithResponse === 'function'
+      // A completed image (and every clear) still ends with a reply when the
+      // controller supports it. This confirms a GATT write, not visible LEDs.
+      const write = requestResponse && c.properties?.write && typeof c.writeValueWithResponse === 'function'
         ? c.writeValueWithResponse(chunk)
         : c.properties?.writeWithoutResponse && typeof c.writeValueWithoutResponse === 'function'
           ? c.writeValueWithoutResponse(chunk)

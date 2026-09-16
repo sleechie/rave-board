@@ -38,6 +38,8 @@
             <label for="protocol">Controller protocol</label><select id="protocol"><option value="auto">Auto (recommended)</option><option value="3">API 3 (newer controllers)</option><option value="2">API 2 (older controllers)</option></select>
             <label for="fps">Target updates per second</label><select id="fps"><option value="30">30 fps (default)</option><option value="60">60 fps (maximum target)</option><option value="15">15 fps</option><option value="4">4 fps</option></select>
             <label for="pacing">Bluetooth pacing</label><select id="pacing"><option value="0">Fast (default)</option><option value="6">Balanced</option><option value="15">Gentle (try if glitchy)</option></select>
+            <label for="reply-mode">Bluetooth replies</label><select id="reply-mode"><option value="frame">Fewer replies (default)</option><option value="packet">Conservative (previous sender)</option></select>
+            <p id="reply-note" class="quiet">Uses fewer replies on compatible API 3 controllers. Conservative restores the previous sender. Disconnect before changing this setting.</p>
             <p class="quiet">If the board connects but stays dark, disconnect and try API 3. Actual update speed depends on its controller.</p>
           </details>
         </section>
@@ -51,6 +53,6 @@
     <p class="rave-note">Ask the gym staff, keep the wall clear, and keep this page open while playing. <a href="/about#how">Setup instructions.</a></p>
     <footer class="site-footer"><span>Rave Board</span><div><a href="/about">About & help</a><span>Independent project. Not affiliated with Kilter.</span></div></footer>
   </main>
-  <script type="module" src="/app.mjs?v=7"></script>
+  <script type="module" src="/app.mjs?v=8"></script>
 </body>
 </html>
