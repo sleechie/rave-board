@@ -1,5 +1,5 @@
-import { ADVERTISING, UART, TX, apiFromName, BoardTransport, BoardPlayer, quantize } from './protocol.mjs';
-import { EFFECTS, makeFrame, mapPoints, cornerFrame, colorAt } from './effects.mjs';
+import { ADVERTISING, UART, TX, apiFromName, BoardTransport, BoardPlayer, quantize } from './protocol.mjs?v=2';
+import { EFFECTS, makeFrame, mapPoints, cornerFrame, colorAt, gravityPhase } from './effects.mjs?v=2';
 
 const $ = id => document.getElementById(id);
 const canvas = $('board'), ctx = canvas.getContext('2d');
@@ -70,7 +70,11 @@ function chooseFamily(family, id, initial = false) {
 
 function pickEffect(id) {
   effect = id; testing = false; testFrame = null;
+  time = id === 'marquee' ? 4 : 0;
+  if (!isRunning()) previewing = true;
   $('effect-title').textContent = id === 'tour' ? 'The full trip' : EFFECTS.find(e => e.id === id).name;
+  $('message-controls').hidden = id !== 'marquee';
+  $('effect-note').textContent = id === 'tour' ? 'An automatic tour through color, rain, lasers, logos and space.' : EFFECTS.find(e => e.id === id).note;
   for (const el of document.querySelectorAll('[data-effect],#tour')) {
     const active = (el.dataset.effect || 'tour') === id;
     el.classList.toggle('selected', active); el.setAttribute('aria-pressed', String(active));
@@ -84,11 +88,16 @@ for (const e of EFFECTS) {
   const tile = document.createElement('canvas'); tile.width = 180; tile.height = 80; tile.setAttribute('aria-hidden','true');
   const t = tile.getContext('2d');
   for (let y = 0; y < 80; y += 4) for (let x = 0; x < 180; x += 4) {
-    const c = colorAt(e.id, (x / 180 - 0.5) * 2, (y / 80 - 0.5) * 1.5, 4, 0.95);
+    const c = colorAt(e.id, (x / 180 - 0.5) * 2, (0.5 - y / 80) * 1.5, 4, 0.95);
     t.fillStyle = `rgb(${c.join(',')})`; t.fillRect(x, y, 3, 3);
   }
   const title = document.createElement('strong'); title.textContent = e.name;
-  button.append(tile, title); button.addEventListener('click', () => pickEffect(e.id));
+  if (e.id === 'gravity' || e.id === 'purgatory') {
+    const art = document.createElement('img'); art.alt = '';
+    art.src = e.id === 'gravity' ? 'assets/gravity-lab.webp' : 'assets/purgatory-mark.svg';
+    button.append(art, title);
+  } else button.append(tile, title);
+  button.addEventListener('click', () => pickEffect(e.id));
   $('effects').append(button);
 }
 $('tour').addEventListener('click', () => pickEffect('tour'));
@@ -96,12 +105,17 @@ $('layout').addEventListener('change', () => chooseFamily($('layout').value));
 $('size').addEventListener('change', () => chooseBoard($('size').value));
 $('speed').addEventListener('input', () => { $('speed-value').textContent = Number($('speed').value).toFixed(2).replace(/0$/,'') + '×'; });
 $('brightness').addEventListener('input', () => { $('brightness-value').textContent = $('brightness').value + '%'; });
+$('message').addEventListener('input', () => { if (!isRunning()) previewing = true; updateControls(); });
 $('preview').addEventListener('click', () => { previewing = !previewing; testing = false; updateControls(); });
 
-function currentFrame() { return makeFrame(points, effect, time, Number($('brightness').value) / 100); }
+function currentFrame() { return makeFrame(points, effect, time, Number($('brightness').value) / 100, { message: $('message').value }); }
 function render(now) {
   const dt = Math.min((now - lastTime) / 1000, 0.15); lastTime = now;
   if (previewing || isRunning()) time += dt * Number($('speed').value);
+  if (effect === 'gravity') {
+    $('effect-note').textContent = gravityPhase(time, points[0]?.textWidth).mode === 'logo'
+      ? 'Flask + climber → GRAVITY LAB lettering comes next.' : 'GRAVITY LAB · scrolling across the handholds in the gym’s colors.';
+  }
   if (board) {
     const rect = canvas.getBoundingClientRect();
     const dpr = Math.min(devicePixelRatio || 1, 2);
@@ -119,12 +133,13 @@ function render(now) {
     const colors = new Map(frame.map(p => [p.position, quantize(p.rgb, transport?.level || 3)]));
     const radius = Math.max(2.2, Math.min(6, bw / 75));
     for (const p of points) {
-      const rgb = colors.get(p.position) || [20,18,27], color = `rgb(${rgb.join(',')})`;
+      const rgb = colors.get(p.position) || [0,0,0], lit = rgb.some(v => v > 0);
+      const color = lit ? `rgb(${rgb.join(',')})` : '#201b2d';
       const x=ox+p.u*bw,y=oy+p.v*bh;
-      ctx.fillStyle=color; ctx.shadowColor=color; ctx.shadowBlur=testing && !colors.has(p.position) ? 0 : radius*3.5;
-      ctx.beginPath();ctx.arc(x,y,radius,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle=color; ctx.shadowColor=color; ctx.shadowBlur=lit ? radius*3.5 : 0;
+      ctx.beginPath();ctx.arc(x,y,lit ? radius : radius*.4,0,Math.PI*2);ctx.fill();
       ctx.shadowBlur=0;
-      if (colors.has(p.position)) {ctx.fillStyle='#ffffff80';ctx.beginPath();ctx.arc(x,y,radius*.35,0,Math.PI*2);ctx.fill();}
+      if (lit) {ctx.fillStyle='#ffffff80';ctx.beginPath();ctx.arc(x,y,radius*.35,0,Math.PI*2);ctx.fill();}
     }
   }
   requestAnimationFrame(render);
@@ -175,8 +190,8 @@ $('connect').addEventListener('click', async () => {
     player = new BoardPlayer(transport, currentFrame, (frame, bytes, duration) => {
       lastSent = frame; writes++;
       sendRate = writes / ((performance.now()-startedAt)/1000);
-      status(`Playing · ${points.length} holds · ${sendRate.toFixed(1)} frames/sec sent · ${Math.round(duration)} ms per frame. Stop & clear when finished.`);
-    }, failed);
+      status(`Playing · ${sendRate.toFixed(1)} frames/sec sent · ${bytes} bytes/frame · target ${$('fps').value} fps. Actual speed depends on the controller.`);
+    }, failed, () => Number($('fps').value));
     status(`Connected to ${candidate.name || 'board'} · API ${level}. Test corners to check the map, then Play on board.`);
   } catch (error) {
     candidate?.gatt?.disconnect();

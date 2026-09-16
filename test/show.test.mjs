@@ -2,7 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { encodeFrame, apiFromName, BoardTransport, BoardPlayer, delay } from '../site/protocol.mjs';
-import { EFFECTS, makeFrame, mapPoints, cornerFrame } from '../site/effects.mjs';
+import { EFFECTS, makeFrame, mapPoints, cornerFrame, gravityPhase } from '../site/effects.mjs';
+import { cleanMessage, textDuration } from '../site/lettering.mjs';
 
 // A receiving-side packet decoder. Checks packet boundaries, checksum, markers,
 // LED ordering and color bits independently of the sender's implementation.
@@ -44,8 +45,9 @@ test('matches the independent published Grip Connect API 2 and 3 wire fixtures',
 });
 
 const data = JSON.parse(fs.readFileSync(new URL('../site/boards.json',import.meta.url)));
-test('all 16 maps produce valid full-wall frames for both controller versions and all seven modes', () => {
+test('all 16 maps produce valid replacement frames for both controller versions and all 14 modes', () => {
   assert.equal(data.boards.length,16);
+  assert.equal(EFFECTS.length,13);
   for (const board of data.boards) {
     const points = mapPoints(board,board.sets.map(s=>s.id));
     assert.ok(points.length >= 100);
@@ -58,10 +60,54 @@ test('all 16 maps produce valid full-wall frames for both controller versions an
         const decoded = decode(encodeFrame(frame,level),level);
         assert.equal(decoded.length,1);
         assert.deepEqual(decoded[0].map(p=>p.position),points.map(p=>p.position));
-        assert.ok(new Set(decoded[0].map(p=>p.color)).size > 8);
+        if (EFFECTS.some(e=>e.id===effect && e.category !== 'new')) {
+          assert.ok(new Set(decoded[0].map(p=>p.color)).size > 8);
+        }
       }
     }
   }
+});
+
+test('sparse frames omit only wire-black LEDs and replace stale lights on both API versions', () => {
+  const points=mapPoints(data.boards.find(b=>b.id===10),[1,20]);
+  for (const level of [2,3]) {
+    const full=makeFrame(points,'rain',2,.85);
+    const raw=encodeFrame(full,level), compact=encodeFrame(full,level,{omitDark:true});
+    assert.ok(compact.length < raw.length * .4, `Rain should shrink materially (API ${level})`);
+    const decodedFull=decode(raw,level)[0], decodedSparse=decode(compact,level)[0];
+    assert.deepEqual(decodedSparse,decodedFull.filter(p=>p.color!==0));
+    // A subsequent complete frame clears LEDs omitted from that frame.
+    const frames=decode([...compact,...encodeFrame([{position:900,rgb:[255,0,0]}],level,{omitDark:true}),...encodeFrame([{position:900,rgb:[1,1,1]}],level,{omitDark:true})],level);
+    assert.equal(frames[1].length,1); assert.deepEqual(frames[2],[]);
+  }
+});
+
+test('Gravity Lab alternates original emblem and readable GRAVITY LAB letters on handholds', () => {
+  const points=mapPoints(data.boards.find(b=>b.id===10),[1,20]);
+  const mark=makeFrame(points,'gravity',0,1);
+  const lit=mark.filter(p=>p.rgb.some(c=>c>0));
+  assert.ok(lit.length>60 && lit.length<points.length*.7);
+  assert.equal(gravityPhase(0).mode,'logo');assert.equal(gravityPhase(12).mode,'text');
+  assert.equal(gravityPhase(8+textDuration('GRAVITY LAB')).mode,'logo');
+  const letters=makeFrame(points,'gravity',8+17/4,1);
+  const byPosition=new Map(letters.map(p=>[p.position,p.rgb]));
+  const expected=['01110','10001','10000','10111','10001','10001','01110'];
+  for(let row=0;row<7;row++)for(let col=0;col<5;col++) {
+    const hold=points.find(p=>p.textX===col && p.textY===row+6);
+    assert.ok(hold,'Handhold grid must be complete');
+    assert.equal(byPosition.get(hold.position).some(c=>c>0),expected[row][col]==='1',`G pixel ${col},${row}`);
+  }
+  assert.ok(points.filter(p=>p.textX===-1).every(p=>byPosition.get(p.position).every(c=>c===0)));
+  assert.equal(cleanMessage('<hello> 💚'), 'HELLO');
+});
+
+test('fast player removes the old 4 fps ceiling while keeping stop final', async () => {
+  const times=[];
+  const transport=new BoardTransport({properties:{writeWithoutResponse:true},writeValueWithoutResponse:async()=>{}},3,()=>{},0);
+  const player=new BoardPlayer(transport,()=>[{position:1,rgb:[0,255,0]}],()=>times.push(performance.now()));
+  player.start();await delay(300);await player.stop();await player.done;
+  assert.ok(times.length>=6,`Expected well above 4 fps with instant writes, saw ${times.length} frames/300ms`);
+  const count=times.length;await delay(100);assert.equal(times.length,count);
 });
 
 test('stopping mid-frame clears AFTER the entire frame, without interleaved writes or later relighting', async () => {

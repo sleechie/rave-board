@@ -1,6 +1,6 @@
 # Kilter Trip
 
-A browser-based psychedelic light show for Kilter Original and Homewall LED boards. Six effects plus an automatic tour: rainbow vortex, acid plasma, kaleidoscope, cosmic tunnel, neon tide, liquid dream. Works through the existing Bluetooth controller; no firmware changes or extra hardware.
+A browser-based psychedelic light show for Kilter Original and Homewall LED boards. Thirteen effects plus an automatic tour: green Matrix-style rain, Gravity Lab, Purgatory, laser cathedral, hyperspace, fireworks, a custom scrolling message, rainbow vortex, acid plasma, kaleidoscope, cosmic tunnel, neon tide, and liquid dream. Works through the existing Bluetooth controller; no firmware changes or extra hardware.
 
 ## At the gym (laptop recommended)
 
@@ -9,17 +9,27 @@ A browser-based psychedelic light show for Kilter Original and Homewall LED boar
 3. Disconnect the official Kilter app and any other device controlling the wall. Use the lights with the gym's permission and nobody climbing.
 4. Click **Connect board**, choose the nearby board, and allow Bluetooth. Connecting does not send any lights.
 5. Click **Test corners**. Expect pink top left, cyan top right, yellow bottom left, green bottom right. If the pattern is wrong, Stop & clear, disconnect, and correct the size/hold sets.
-6. Choose **The full trip** (all six effects crossfading) or **Rainbow vortex**, then **Play on board**. Motion 1x and brightness 85% are the defaults. Keep the tab visible, Bluetooth in range, and the laptop awake.
+6. Choose **The full trip** or an individual effect, then **Play on board**. One **0.1×–32× speed slider** controls every animation, including logo and text sequences. Speed 1× and brightness 85% are the defaults. Click an effect to start its on-screen preview. Keep the tab visible, Bluetooth in range, and the laptop awake.
 7. **Stop & clear lights** completes any frame in flight before sending the clear command. Then **Disconnect Bluetooth** and return to the Kilter app.
 
 Android Chrome also supports the connection. On iPhone/iPad use [Bluefy](https://apps.apple.com/us/app/bluefy-web-ble-browser/id1492822055); Safari and ordinary Chrome on iOS cannot use Web Bluetooth. Bluefy support is based on its documented API, not a physical iPhone/board test.
+
+## New effects and speed
+
+- **Make it rain:** staggered falling green heads and fading tails.
+- **Gravity Lab:** the gym’s actual flask/climber emblem alternates with **GRAVITY LAB** scrolling in blue, white, and electric yellow. The lettering uses the Original board’s regular handhold grid; selected screw-on holds stay dark during text for readability. At 1× the logo lasts 8 seconds, followed by one complete message pass. The global speed slider scales the entire cycle.
+- **Purgatory:** the resort’s actual mountain mark with falling snow.
+- **Laser cathedral / Hyperspace / Send fireworks:** moving neon beams, outward streaks, and colored bursts.
+- **Say something:** enter up to 40 letters/numbers or basic punctuation for your own scrolling sign.
+
+The **0.1×–32×** slider controls visual motion, independently of Bluetooth throughput. Logo lettering may be difficult to read at high speeds; the same slider lets you slow it down. The original colorful effects remain available. Logo artwork and provenance are in [assets/SOURCES.md](assets/SOURCES.md).
 
 ## If it does not work
 
 - No board in the chooser: get closer, turn on laptop Bluetooth, and release the connection in the Kilter app/other phones.
 - Connected but dark: open Connection settings after disconnecting. Auto reads a trailing `@2` or `@3` in the board name and defaults to API 2 when absent. Try API 3 if the controller doesn't advertise a version. Unknown versions are refused.
 - Wrong positions: select the exact layout, size, LED kit and installed hold sets. Hardware discovery cannot automatically identify your layout.
-- Partial/glitchy frames: disconnect, change Bluetooth pacing to Gentle and try again. For faster capable controllers, Fast removes the added delay; every GATT write is still awaited.
+- Partial/glitchy frames: disconnect, change Bluetooth pacing to Gentle and try again. Fast is now the default and removes the added delay; every GATT write is still awaited.
 - Slow animations: the controller receives a full board each frame, in 20-byte writes. The maximum target is 4 frames/sec, but the measured rate may be much lower. Turn Motion down for a slower evolving show. The connected preview displays the last completely transmitted frame.
 - Switching tabs automatically attempts to stop and clear. Closing the browser or losing Bluetooth can leave the last image lit because no clear command can be guaranteed. Reconnect with the Kilter app and send a climb to replace it.
 

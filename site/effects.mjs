@@ -1,4 +1,14 @@
+import { LOGO_MASKS } from './logo-masks.mjs?v=2';
+import { cleanMessage, letterPixel, textDuration } from './lettering.mjs?v=2';
+
 export const EFFECTS = [
+  { id: 'rain', name: 'Make it rain', note: 'Falling green lights, Matrix style', hue: 125, category: 'new' },
+  { id: 'gravity', name: 'Gravity Lab', note: 'The real flask logo ↔ GRAVITY LAB in blue, white and yellow', hue: 60, category: 'new' },
+  { id: 'purgatory', name: 'Purgatory', note: 'The mountain mark emerges through falling snow', hue: 350, category: 'new' },
+  { id: 'lasers', name: 'Laser cathedral', note: 'Crossing neon beams sweep the wall', hue: 310, category: 'new' },
+  { id: 'warp', name: 'Hyperspace', note: 'Rainbow stars rush past you', hue: 190, category: 'new' },
+  { id: 'fireworks', name: 'Send fireworks', note: 'Colorful bursts for the victory lap', hue: 25, category: 'new' },
+  { id: 'marquee', name: 'Say something', note: 'Your own message in big moving pixel letters', hue: 70, category: 'new' },
   { id: 'vortex', name: 'Rainbow vortex', note: 'A spiral with no exit', hue: 290 },
   { id: 'plasma', name: 'Acid plasma', note: 'Liquid color interference', hue: 130 },
   { id: 'kaleido', name: 'Kaleidoscope', note: 'Sixfold neon symmetry', hue: 35 },
@@ -8,6 +18,99 @@ export const EFFECTS = [
 ];
 const TAU = Math.PI * 2;
 const fract = x => x - Math.floor(x);
+const hash = n => fract(Math.sin(n * 127.1 + 311.7) * 43758.5453);
+const scaled = (rgb, intensity) => rgb.map(v => Math.max(0, Math.min(255, Math.round(v * intensity))));
+const BLUE = [75, 135, 255], YELLOW = [232, 255, 35], WHITE = [230, 245, 255];
+
+function maskAt(mask, u, v) {
+  if (u < 0 || u >= 1 || v < 0 || v >= 1) return 0;
+  const x = Math.floor(u * mask.width), y = Math.floor(v * mask.height);
+  return Number(mask.cells[y * mask.width + x]);
+}
+function rainAt(x, y, t, intensity, snow = false) {
+  const column = Math.floor((x + 1) * 10);
+  const speed = 0.28 + hash(column + 8) * 0.38;
+  const head = 1.15 - fract(t * speed * 0.3 + hash(column + 17)) * 2.8;
+  const behind = y - head;
+  const tail = snow ? 0.10 : 0.25 + hash(column + 53) * 0.35;
+  if (behind < -0.07 || behind > tail) return [0, 0, 0];
+  const light = behind < 0.05 ? 1 : Math.max(0, 1 - behind / tail) ** 1.3;
+  return scaled(snow ? [130, 205, 255] : behind < 0.05 ? [145, 255, 165] : [0, 245, 35], light * intensity);
+}
+export function gravityPhase(time, columns = 17) {
+  const duration = textDuration('GRAVITY LAB', columns);
+  const phase = ((time % (8 + duration)) + 8 + duration) % (8 + duration);
+  return phase < 8 ? { mode: 'logo', time: phase } : { mode: 'text', time: phase - 8 };
+}
+
+function specialColor(id, x, y, time, intensity, options) {
+  const point = options.point || { x, y };
+  switch (id) {
+    case 'rain': return rainAt(x, y, time, intensity);
+    case 'gravity': {
+      const phase = gravityPhase(time, point.textWidth);
+      if (phase.mode === 'text') {
+        const pixel = letterPixel('GRAVITY LAB', point, phase.time);
+        if (!pixel) return [0,0,0];
+        return scaled(pixel.character >= 8 ? YELLOW : pixel.row < 2 ? WHITE : BLUE, intensity);
+      }
+      const code = maskAt(LOGO_MASKS.gravity, (x + .87) / 1.74, (.93 - y) / 1.82);
+      if (!code) return [0,0,0];
+      const reveal = phase.time > 6 ? 1 - (phase.time - 6) / 2 : 1;
+      const sweep = Math.exp(-(((y - (1.1 - (phase.time % 4) * .65)) / .11) ** 2));
+      return scaled(code === 2 ? YELLOW : code === 3 ? WHITE : BLUE, intensity * reveal * (.8 + .2 * sweep));
+    }
+    case 'purgatory': {
+      const code = maskAt(LOGO_MASKS.purgatory, (x + .88) / 1.76, (.58 - y) / .96);
+      if (code) {
+        const shimmer = .85 + .15 * Math.sin(x * 4 - time * .6) ** 2;
+        return scaled(code === 3 ? WHITE : [255, 16, 65], intensity * shimmer);
+      }
+      return rainAt(x, y, time * .7, intensity * .75, true);
+    }
+    case 'marquee': {
+      const message = cleanMessage(options.message);
+      const pixel = letterPixel(message, point, time % textDuration(message, point.textWidth));
+      return pixel ? hsv(pixel.character * .09 + time * .035, .9, intensity) : [0,0,0];
+    }
+    case 'lasers': {
+      let best = 0, color = [0,0,0];
+      for (let i = 0; i < 5; i++) {
+        const angle = time * (.18 + i * .02) + i * 1.3;
+        const distance = Math.abs(x * Math.cos(angle) + y * Math.sin(angle) - Math.sin(time * .35 + i) * .35);
+        const light = Math.max(0, 1 - distance / .075) ** .7;
+        if (light > best) { best = light; color = hsv(i / 5 + time * .025, .96, intensity * light); }
+      }
+      return color;
+    }
+    case 'warp': {
+      let best = 0, color = [0,0,0];
+      for (let i = 0; i < 28; i++) {
+        const a = hash(i + 1) * TAU, phase = fract(time * .16 + hash(i + 41));
+        const radius = .04 + phase * phase * 1.7;
+        const sx = Math.cos(a) * radius, sy = Math.sin(a) * radius;
+        const along = (x-sx)*Math.cos(a)+(y-sy)*Math.sin(a), across = Math.abs((x-sx)*Math.sin(a)-(y-sy)*Math.cos(a));
+        const length = .05 + phase * .2;
+        const light = along < .04 && along > -length ? Math.max(0,1-across/(.025+phase*.025)) * (1+along/length) : 0;
+        if (light > best) {best=light;color=hsv(i*.077+time*.025,.72,intensity*Math.min(1,light));}
+      }
+      return color;
+    }
+    case 'fireworks': {
+      let best = 0, color = [0,0,0];
+      for (let i = 0; i < 4; i++) {
+        const cycle = time * .22 + i * .31, age = fract(cycle), seed = Math.floor(cycle)*13+i;
+        const cx = (hash(seed+10)-.5)*1.35, cy = (hash(seed+31)-.5)*1.25;
+        const dx=x-cx, dy=y-cy+age*age*.22, r=Math.hypot(dx,dy), angle=Math.atan2(dy,dx);
+        const ring=Math.max(0,1-Math.abs(r-age*.9)/.08), spokes=Math.max(0,Math.cos(angle*9+seed));
+        const light=ring*(.2+.8*spokes)*(1-age);
+        if(light>best){best=light;color=hsv(hash(seed),.9,Math.min(1,light*1.8)*intensity);}
+      }
+      return color;
+    }
+    default: return null;
+  }
+}
 
 export function hsv(h, s, v) {
   const h6 = fract(h) * 6, i = Math.floor(h6), f = h6 - i;
@@ -16,7 +119,9 @@ export function hsv(h, s, v) {
   return rgb.map(x => Math.max(0, Math.min(255, Math.round(x * 255))));
 }
 
-export function colorAt(id, x, y, time, intensity = 1) {
+export function colorAt(id, x, y, time, intensity = 1, options = {}) {
+  const special = specialColor(id, x, y, time, intensity, options);
+  if (special) return special;
   const r = Math.hypot(x, y), a = Math.atan2(y, x);
   let h = 0, v = 1;
   switch (id) {
@@ -57,20 +162,20 @@ export function colorAt(id, x, y, time, intensity = 1) {
   return hsv(h, 0.96, v * intensity);
 }
 
-export function makeFrame(points, effect, time, brightness = 1) {
-  let id = effect, next, mix = 0;
+const TOUR = ['vortex','rain','plasma','lasers','gravity','kaleido','warp','purgatory','fireworks','tunnel','aurora','liquid'];
+export function makeFrame(points, effect, time, brightness = 1, options = {}) {
+  let id = effect, next, mix = 0, sceneTime = time;
   if (effect === 'tour') {
-    const scene = time / 24;
-    const i = Math.floor(scene) % EFFECTS.length;
-    id = EFFECTS[i].id;
-    next = EFFECTS[(i + 1) % EFFECTS.length].id;
-    mix = Math.max(0, (fract(scene) - 0.85) / 0.15);
+    const scene = time / 32;
+    const i = Math.floor(scene) % TOUR.length;
+    id = TOUR[i]; next = TOUR[(i + 1) % TOUR.length]; sceneTime = time % 32;
+    mix = Math.max(0, (fract(scene) - 0.93) / 0.07);
     mix = mix * mix * (3 - 2 * mix);
   }
   return points.map(p => {
-    let rgb = colorAt(id, p.x, p.y, time, brightness);
+    let rgb = colorAt(id, p.x, p.y, sceneTime, brightness, { ...options, point: p });
     if (mix) {
-      const other = colorAt(next, p.x, p.y, time, brightness);
+      const other = colorAt(next, p.x, p.y, 0, brightness, { ...options, point: p });
       rgb = rgb.map((v, i) => Math.round(v * (1 - mix) + other[i] * mix));
     }
     return { position: p.position, rgb };
@@ -80,9 +185,14 @@ export function makeFrame(points, effect, time, brightness = 1) {
 export function mapPoints(board, setIds) {
   const [left, right, bottom, top] = board.bounds;
   const scale = Math.max(right - left, top - bottom) / 2;
-  return board.points.filter(p => setIds.includes(p[3])).map(([position, x, y]) => ({
+  const selected = board.points.filter(p => setIds.includes(p[3]));
+  const textPoints = board.family === 'Original' && setIds.includes(1) ? selected.filter(p => p[3] === 1) : selected;
+  const columns = [...new Set(textPoints.map(p => p[1]))].sort((a,b)=>a-b);
+  const rows = [...new Set(textPoints.map(p => p[2]))].sort((a,b)=>b-a);
+  return selected.map(([position, x, y]) => ({
     position, x: (x - (left + right) / 2) / scale, y: (y - (top + bottom) / 2) / scale,
     u: (x - left) / (right - left), v: 1 - (y - bottom) / (top - bottom),
+    textX: columns.indexOf(x), textY: rows.indexOf(y), textWidth: columns.length, textHeight: rows.length,
   }));
 }
 

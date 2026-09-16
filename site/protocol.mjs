@@ -11,7 +11,7 @@ export function apiFromName(name = '') {
   return level;
 }
 
-export function encodeFrame(leds, level = 3) {
+export function encodeFrame(leds, level = 3, { omitDark = false } = {}) {
   if (![2, 3].includes(level)) throw new Error('Unsupported board protocol');
   const stride = level === 3 ? 3 : 2;
   const markers = level === 3 ? [81, 82, 83, 84] : [77, 78, 79, 80];
@@ -23,11 +23,14 @@ export function encodeFrame(leds, level = 3) {
     if (!Array.isArray(rgb) || rgb.length !== 3 || rgb.some(v => !Number.isInteger(v) || v < 0 || v > 255)) {
       throw new Error('Invalid LED color');
     }
-    if (packets.at(-1).length + stride > 254) packets.push([]);
     const [r, g, b] = rgb;
     const packed = level === 3
       ? [position & 255, position >> 8, ((r >> 5) << 5) | ((g >> 5) << 2) | (b >> 6)]
       : [position & 255, ((position >> 8) & 3) | ((r >> 6) << 6) | ((g >> 6) << 4) | ((b >> 6) << 2)];
+    // A complete Aurora frame replaces the previous one, including unlisted
+    // LEDs. Omit holds quantized to black: rain/logos need far fewer BLE writes.
+    if (omitDark && (level === 3 ? packed[2] === 0 : (packed[1] & 252) === 0)) continue;
+    if (packets.at(-1).length + stride > 254) packets.push([]);
     packets.at(-1).push(...packed);
   }
   return Uint8Array.from(packets.flatMap((packet, i) => {
@@ -48,7 +51,7 @@ export function quantize(rgb, level = 3) {
 export const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 export class BoardTransport {
-  constructor(characteristic, level, onFailure = () => {}, gapMs = 6) {
+  constructor(characteristic, level, onFailure = () => {}, gapMs = 0) {
     this.characteristic = characteristic;
     this.level = level;
     this.onFailure = onFailure;
@@ -57,7 +60,7 @@ export class BoardTransport {
     this.closed = false;
   }
   send(leds) {
-    const payload = encodeFrame(leds, this.level);
+    const payload = encodeFrame(leds, this.level, { omitDark: true });
     const op = this.tail.then(async () => {
       if (this.closed) throw new Error('Board disconnected. Reconnect before sending.');
       try {
@@ -93,8 +96,8 @@ export class BoardTransport {
 // At most one animation frame is in flight. Stop appends a clear AFTER that
 // whole frame, so a stale final packet cannot relight the board after clearing.
 export class BoardPlayer {
-  constructor(transport, getFrame, onFrame = () => {}, onError = () => {}) {
-    Object.assign(this, { transport, getFrame, onFrame, onError });
+  constructor(transport, getFrame, onFrame = () => {}, onError = () => {}, getTargetFps = () => 30) {
+    Object.assign(this, { transport, getFrame, onFrame, onError, getTargetFps });
     this.generation = 0;
     this.running = false;
     this.stopping = null;
@@ -114,7 +117,8 @@ export class BoardPlayer {
         if (!this.running || generation !== this.generation) break;
         const duration = performance.now() - started;
         this.onFrame(frame, bytes, duration);
-        await delay(Math.max(0, 250 - duration));
+        const fps = Math.max(1, Math.min(60, Number(this.getTargetFps()) || 30));
+        await delay(Math.max(0, 1000 / fps - duration));
       }
     } catch (error) {
       this.running = false;

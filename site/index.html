@@ -7,24 +7,25 @@
   <meta name="description" content="A pocket-sized psychedelic light show for your Kilter Board. Rainbow spirals, liquid plasma and kaleidoscopes, over Bluetooth.">
   <title>Kilter Trip — turn the wall into a wormhole</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%230a0910'/%3E%3Ccircle cx='32' cy='32' r='21' stroke='%23b7ff59' stroke-width='7' fill='none'/%3E%3Ccircle cx='32' cy='32' r='9' fill='%23ff53e2'/%3E%3C/svg%3E">
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=2">
 </head>
 <body>
   <main>
-    <header><a class="wordmark" href="./"><span class="logo" aria-hidden="true">◎</span> KILTER TRIP<span class="edition">LIGHT LAB / 001</span></a><a class="how-link" href="#how">How to play <span>↗</span></a></header>
-    <section class="intro"><div class="eyebrow"><span></span> A LITTLE WEIRD. VERY COLORFUL.</div><h1>Turn the wall<br>into a <em>wormhole.</em></h1><p>Your holds. Six strange universes. One Bluetooth connection.</p></section>
+    <header><a class="wordmark" href="./"><span class="logo" aria-hidden="true">◎</span> KILTER TRIP<span class="edition">THE RAVE UPDATE / 002</span></a><a class="how-link" href="#how">How to play <span>↗</span></a></header>
+    <section class="intro"><div class="eyebrow"><span></span> A LITTLE WEIRD. VERY COLORFUL.</div><h1>Turn the wall<br>into a <em>wormhole.</em></h1><p>Thirteen trips. Your gym’s logo. Take it from slow melt to full rave.</p></section>
     <div class="studio">
       <section class="stage" aria-label="Light show preview">
         <div class="stage-top"><span id="preview-label">ON-SCREEN PREVIEW</span><span id="led-count">LOADING HOLD MAP…</span></div>
         <div class="canvas-wrap"><canvas id="board" aria-label="Animated colors at actual Kilter hold positions"></canvas></div>
         <div class="stage-bottom"><div><span class="tiny">NOW EXPLORING</span><strong id="effect-title">The full trip</strong></div><button id="preview" class="small-button">▶ Preview</button></div>
-        <div class="stage-caption">Real hold positions. Board colors and motion depend on its controller.</div>
+        <div class="stage-caption"><span id="effect-note">An automatic tour through color, rain, lasers, logos and space.</span><span class="hardware-note">Real hold positions. Board colors and motion depend on its controller.</span></div>
       </section>
       <div class="controls">
         <section class="panel"><div class="section-label"><span>01 / PICK YOUR TRIP</span><span class="tiny">NO STROBE MODE</span></div>
-          <button id="tour" class="tour selected" aria-pressed="true"><span class="tour-icon">✳</span><span><strong>The full trip</strong><small>All six worlds, slowly melting together</small></span><span class="arrow">↗</span></button>
+          <button id="tour" class="tour selected" aria-pressed="true"><span class="tour-icon">✳</span><span><strong>The full trip</strong><small>Color, rain, logos, lasers, space. All of it.</small></span><span class="arrow">↗</span></button>
+          <div class="slider-row speed-control"><label for="speed">Speed — every animation <output id="speed-value">1.0×</output></label><input id="speed" type="range" min="0.1" max="32" step="0.1" value="1"><div class="range-ends"><span>0.1× · slow melt</span><span>32× · full rave</span></div></div>
           <div id="effects" class="effects"></div>
-          <div class="slider-row"><label for="speed">Motion <output id="speed-value">1.0×</output></label><input id="speed" type="range" min="0.25" max="2" step="0.05" value="1"></div>
+          <div id="message-controls" hidden><label for="message">Put it on the wall</label><input id="message" type="text" maxlength="40" value="SEND IT!" placeholder="SEND IT!" autocomplete="off"><p class="quiet">Letters, numbers, spaces, ! ? . and - · scrolls across the handholds.</p></div>
           <div class="slider-row"><label for="brightness">Brightness <output id="brightness-value">85%</output></label><input id="brightness" type="range" min="35" max="100" step="1" value="85"></div>
         </section>
         <section class="panel setup"><div class="section-label"><span>02 / MEET YOUR WALL</span><span id="connection-badge" class="badge">PREVIEW ONLY</span></div>
@@ -38,7 +39,7 @@
           <button id="stop" class="stop" disabled>■ Stop & clear lights</button>
           <button id="disconnect" class="disconnect" hidden>Disconnect Bluetooth</button>
           <p class="quiet">Use with your gym’s okay and the wall clear. Keep this tab visible and your laptop awake while playing.</p>
-          <details class="advanced"><summary>Connection settings</summary><label for="protocol">Controller protocol</label><select id="protocol"><option value="auto">Auto — detect from board name</option><option value="3">API 3 — newer controllers</option><option value="2">API 2 — older controllers</option></select><label for="pacing">Bluetooth pacing</label><select id="pacing"><option value="6">Balanced — 6 ms between writes</option><option value="15">Gentle — 15 ms (try if glitchy)</option><option value="0">Fast — no added delay</option></select><p class="quiet">Auto uses API 2 when the board name has no @ suffix. If it connects but stays dark, disconnect and try API 3. Each complete frame finishes before the next starts.</p></details>
+          <details class="advanced"><summary>Connection settings</summary><label for="protocol">Controller protocol</label><select id="protocol"><option value="auto">Auto — detect from board name</option><option value="3">API 3 — newer controllers</option><option value="2">API 2 — older controllers</option></select><label for="fps">Target updates per second</label><select id="fps"><option value="30">30 fps — fast (default)</option><option value="60">60 fps — maximum target</option><option value="15">15 fps</option><option value="4">4 fps — original setting</option></select><label for="pacing">Bluetooth pacing</label><select id="pacing"><option value="0">Fast — no added delay (default)</option><option value="6">Balanced — 6 ms between writes</option><option value="15">Gentle — 15 ms (try if glitchy)</option></select><p class="quiet">The speed slider controls motion; the controller determines actual frame rate. Dark holds are omitted from full replacement frames to make rain and logos lighter to send. Auto uses API 2 when the board name has no @ suffix. If it connects but stays dark, disconnect and try API 3.</p></details>
         </section>
       </div>
     </div>
@@ -46,6 +47,6 @@
     <section class="limitations"><strong>A real Bluetooth show, with one honest caveat.</strong><p>The web controls and packet encoding have been tested in software; this build has not been tested on a physical Kilter Board. Full-wall updates can be much slower than the screen preview. The app shows the measured sending rate once connected. If Bluetooth drops or you close the browser, the last frame may stay lit — reconnect with the Kilter app to replace it.</p></section>
     <footer><span>MADE FOR THE SPACE BETWEEN SENDS.</span><span>Independent project · <a href="README.md">Guide & sources</a> · <a href="kilter-trip-source.zip" download>Download source</a></span></footer>
   </main>
-  <script type="module" src="app.mjs"></script>
+  <script type="module" src="app.mjs?v=2"></script>
 </body>
 </html>

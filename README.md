@@ -1,6 +1,6 @@
 # Kilter Trip
 
-A colorful Bluetooth light-show player for Kilter Boards, with six animated effects and a crossfading tour.
+A colorful Bluetooth light-show player for Kilter Boards, with thirteen animated effects and a crossfading tour.
 
 See [the full guide](site/README.md) for laptop setup, compatibility, verification limits, and source attribution.
 
