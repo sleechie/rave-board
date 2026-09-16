@@ -37,7 +37,7 @@ function setBoard(){
   points=buildPoints(board,selectedSets());lastSent=null;testFrame=null;
   const bolts=points.filter(p=>p.kind==='bolt').length;
   $('hold-count').textContent=`${bolts} bolt-ons / ${points.length-bolts} screw-ons`;
-  status(points.length?'Preview only. Connect and press Play when ready to test the wall.':'Select at least one installed hold set.');
+  status(points.length?(support.canConnect?'Preview only. Connect and press Play when ready to test the wall.':'Preview only in this browser. Use Original and Adapted to compare.'):'Select at least one installed hold set.');
   controls();
 }
 function changed(restart=false){

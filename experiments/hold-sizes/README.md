@@ -2,6 +2,9 @@
 
 This is an alternative to Rave Board, not a replacement. It is contained entirely in `experiments/hold-sizes` on the **experiment/hold-sizes** branch. Do not merge it to `main` unless explicitly requested.
 
+Live test page: https://raveboard-hold-lab.up.railway.app/
+Railway service ID: `6a6447b5-0b82-4e9c-aaf3-5d19b67e8581`.
+
 ## Isolation
 
 - Dedicated Railway service: **hold-size-lab**, in the personal **sleechie's Projects** workspace's rave-board project. Production **raveboard** remains connected to `main`.
