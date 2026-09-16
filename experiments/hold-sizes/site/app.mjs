@@ -4,6 +4,8 @@ import { cornerFrame } from './baseline/effects.mjs';
 import { connectionSupport } from './baseline/compatibility.mjs';
 
 const $=id=>document.getElementById(id);
+for(const pattern of PATTERNS)$('pattern').append(new Option(pattern.name,pattern.id));
+$('pattern').value='gravity';
 const support=connectionSupport({userAgent:navigator.userAgent,platform:navigator.platform,maxTouchPoints:navigator.maxTouchPoints,bluetooth:Boolean(navigator.bluetooth),secure:isSecureContext});
 const canvases=[$('uniform'),$('sized')],contexts=canvases.map(c=>c.getContext('2d'));
 let boards=[],board,points=[],time=3,lastTime=performance.now(),lastPaint=0,dirty=true;
@@ -29,6 +31,7 @@ function controls(){
   for(const id of ['size','protocol','pacing'])$(id).disabled=live||busy||!board;
   for(const el of $('sets').querySelectorAll('input'))el.disabled=live||busy;
   const pattern=PATTERNS.find(p=>p.id===$('pattern').value);
+  $('message-field').hidden=pattern.id!=='marquee';
   $('variant-label').textContent=variant()==='adapted'?'Adapted pattern':'Original pattern';
   $('pattern-note').textContent=variant()==='adapted'?pattern.note:'A frozen copy of the current Rave Board animation. Only the two preview styles differ.';
 }
@@ -48,6 +51,7 @@ function changed(restart=false){
   controls();
 }
 $('pattern').addEventListener('change',()=>changed(true));
+$('message').addEventListener('input',()=>changed(true));
 for(const el of document.querySelectorAll('input[name=variant]'))el.addEventListener('change',()=>changed());
 $('size').addEventListener('change',setBoard);
 for(const el of $('sets').querySelectorAll('input'))el.addEventListener('change',setBoard);
@@ -59,7 +63,7 @@ $('foot-size').addEventListener('input',()=>{$('foot-size-value').textContent=$(
 $('fps').addEventListener('change',()=>{if(running())player.refresh();});
 $('preview').addEventListener('click',()=>{previewing=!previewing;cleared=false;testFrame=null;controls();});
 $('restart').addEventListener('click',()=>{time=0;changed();});
-const currentFrame=()=>frameFor(points,$('pattern').value,variant(),time,Number($('brightness').value)/100);
+const currentFrame=()=>frameFor(points,$('pattern').value,variant(),time,Number($('brightness').value)/100,{message:$('message').value});
 
 function drawCanvas(index,frame){
   const canvas=canvases[index],ctx=contexts[index],rect=canvas.getBoundingClientRect(),dpr=Math.min(devicePixelRatio||1,2);

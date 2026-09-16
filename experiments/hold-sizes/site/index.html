@@ -12,9 +12,10 @@
   <section class="intro"><h1>Hold-size experiment</h1><p>Compare equal-sized dots with larger bolt-on rings and smaller screw-on rings. Both previews show the same frame.</p><p class="muted">This is a separate test deployment. Settings reset when you reload or close this tab. Disconnect the main Rave page before connecting here.</p></section>
   <aside id="compatibility" hidden></aside>
   <section class="settings" aria-label="Experiment controls">
-    <div><label for="pattern">Animation</label><select id="pattern"><option value="gravity">Gravity lettering</option><option value="rain">Green rain</option><option value="vortex">Rainbow spiral</option></select></div>
+    <div><label for="pattern">Animation</label><select id="pattern"></select><p class="field-note">All 12 effects, each with an Original and Adapted version.</p></div>
     <fieldset class="version"><legend>Pattern version</legend><label><input type="radio" name="variant" value="original"> Original</label><label><input type="radio" name="variant" value="adapted" checked> Adapted</label></fieldset>
     <div><label for="size">Original board size</label><select id="size" disabled></select></div>
+    <div id="message-field" hidden><label for="message">Scrolling message</label><input id="message" type="text" value="SEND IT!" maxlength="40" autocomplete="off" spellcheck="false"><p class="field-note">Letters, numbers, spaces, and ! ? . -</p></div>
     <div><label for="speed">Speed <output id="speed-value">1.0×</output></label><input id="speed" type="range" min="0.1" max="32" step="0.1" value="1"></div>
     <div><label for="brightness">Brightness sent to board <output id="brightness-value">85%</output></label><input id="brightness" type="range" min="35" max="100" value="85"></div>
     <div><label for="foot-size">Foothold diameter in preview <output id="foot-size-value">45% of bolt-on</output></label><input id="foot-size" type="range" min="20" max="80" value="45"><p class="field-note">A visual estimate only. It does not change board output.</p></div>

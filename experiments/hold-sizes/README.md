@@ -21,9 +21,24 @@ Both canvases display the exact same color frame. The left reproduces the existi
 
 The **Original / Adapted** choice changes the actual colors sent to the board:
 
-- Gravity: original current lettering vs letters built on the bolt-on grid with foot twinkles outside the text.
-- Rain: original pattern vs bolt-on-anchored heads/tails and quieter foot droplets.
-- Spiral: original pattern vs the same bolt-on spiral with a quieter, shifted-color foot layer.
+Every one of the 12 production animations is available in both versions, plus the automatic cycle. **Original** calls the frozen production animation directly, including custom scrolling text. **Adapted** gives both hold sets a deliberate part in the pattern; it does not apply a blanket brightness reduction to screw-ons.
+
+| Animation | Adapted use of the smaller screw-ons |
+| --- | --- |
+| Gravity Lab | Colored stitching and highlights around the main letters, plus twinkles |
+| Scrolling text | Colored edges on tall letters, with an editable message |
+| Make it rain | Independent bright droplets and connecting trails |
+| Laser cathedral | Thin moving beams between the broader bolt-on beams |
+| Hyperspace | More stars and fine, fast trails |
+| Fireworks | Smaller sparks and trailing rings around the bursts |
+| Rainbow vortex | A tighter spiral moving against the main spiral |
+| Acid plasma | Bright filaments inside broad color fields |
+| Kaleidoscope | Finer mirrored spokes and rings |
+| Cosmic tunnel | Moving beads between the broad tunnel rings |
+| Neon tide | Narrow ribbons among the wider curtains |
+| Liquid dream | Contours moving through the larger color pools |
+
+Cycle effects preserves the production sequence and timing, switching the whole sequence between Original and Adapted. Scrolling text is selected separately, as it is in production.
 
 ## Run
 
