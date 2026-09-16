@@ -58,7 +58,7 @@ Cycle effects preserves the production sequence and timing, switching the whole 
 From this directory: `npm start` (Node 24+, no dependencies), then `http://localhost:8080`.
 Tests: `npm test`.
 
-Railway root directory: `/experiments/hold-sizes`; source: `sleechie/kilter-trip`, branch `experiment/hold-sizes`; Dockerfile: `Dockerfile`; healthcheck: `/healthz`. App sleeping is enabled. Service configuration is managed directly in Railway.
+Railway root directory: `/experiments/hold-sizes`; source: `sleechie/rave-board`, branch `experiment/hold-sizes`; Dockerfile: `Dockerfile`; healthcheck: `/healthz`. App sleeping is enabled. Service configuration is managed directly in Railway.
 
 ## Dispose
 
@@ -67,3 +67,5 @@ When requested, delete only the **hold-size-lab** Railway service and the **expe
 This is not a Bluetooth hardware simulator. The controls use the same frozen sender as the main app. Preview comparisons and software checks do not establish physical-board behavior.
 
 Climber repeats every 32 seconds at 1×: climb (0–18s), hang (18–20s), fall (20–22s), ground-up burst (22–28s), then fading embers. It has both Original and Adapted versions.
+
+Original experiment code is covered by the repository [MIT License](../../LICENSE); retain the bundled third-party licenses and shape-source notice when reusing the data.

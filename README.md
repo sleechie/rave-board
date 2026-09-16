@@ -1,21 +1,18 @@
-# Rave Board
+# Rave Board hold-size experiment
 
-A colorful Bluetooth light-show player for Kilter Boards, with twelve animated effects and a crossfading tour.
+This branch hosts the disposable comparison lab. The production application, current sender, and project documentation are on **[main](https://github.com/sleechie/rave-board)**.
 
-Public website: https://raveboard.up.railway.app/
+[Open the lab](https://raveboard-hold-lab.up.railway.app/) · [Experiment notes](experiments/hold-sizes/README.md)
 
-Personal repository: https://github.com/sleechie/kilter-trip
+With Node.js 24 or newer:
 
-Three public pages: Home (`/`), About (`/about`), Rave (`/rave`). Built-in effects only; no accounts, database, uploads, marketplace, or playlist builder.
+```sh
+cd experiments/hold-sizes
+npm start
+```
 
-The browser sends Bluetooth commands directly to a chosen board. The server only serves the site. iPhone/iPad are preview-only for this release, including specialist browsers. Android Chrome connections are quietly enabled when the API is available; they remain experimental and aren't marketed on the landing page.
+Open http://localhost:8080. Run `npm test` from the same directory. No dependency installation is required.
 
-See [the technical guide](site/README.md) for protocol notes and verification limits. The original prototype remains at https://holy-vision-pfqx.here.now/; Railway is the public website.
+The lab has its own deployment, origin, assets and frozen baseline. It is not the current production Bluetooth sender and should not be merged wholesale into `main`.
 
-Run software tests: `npm test`.
-
-Run locally with Node 24+: `npm start`, then open `http://localhost:8080`. `PORT` is configurable. The static server exposes only the three pages and intentional assets. Repository docs, source archives, and dotfiles are not served.
-
-Railway uses the root Dockerfile and `railway.json`, with `/healthz` for readiness. The project is **rave-board**, service **raveboard**, in the personal **sleechie's Projects** workspace (never AMA). GitHub source is `sleechie/kilter-trip`, branch `main`.
-
-Software checks cover packet formatting and cancellation, mobile connection policy, and HTTP routing. The latest stop/switch changes still need a physical-board retest; mobile layout checks are not Bluetooth hardware validation.
+Original code is available under the [MIT License](LICENSE). Retain the experiment's bundled third-party licenses and hold-data provenance. Third-party artwork and trademarks are not covered by the MIT grant.
