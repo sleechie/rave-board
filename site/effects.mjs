@@ -2,17 +2,17 @@ import { LOGO_MASKS } from './logo-masks.mjs?v=2';
 import { cleanMessage, letterPixel, textDuration } from './lettering.mjs?v=2';
 
 export const EFFECTS = [
-  { id: 'rain', name: 'Make it rain', note: 'Falling green lights, Matrix style', hue: 125, category: 'new' },
-  { id: 'gravity', name: 'Gravity Lab', note: 'The real flask logo ↔ GRAVITY LAB in blue, white and yellow', hue: 60, category: 'new' },
-  { id: 'purgatory', name: 'Purgatory', note: 'The mountain mark emerges through falling snow', hue: 350, category: 'new' },
+  { id: 'rain', name: 'Make it rain', note: 'Falling green lights with long trails', hue: 125, category: 'new' },
+  { id: 'gravity', name: 'Gravity Lab', note: 'The flask logo alternates with scrolling GRAVITY LAB text', hue: 60, category: 'new' },
+  { id: 'purgatory', name: 'Purgatory', note: 'The Purgatory logo with falling snow', hue: 350, category: 'new' },
   { id: 'lasers', name: 'Laser cathedral', note: 'Crossing neon beams sweep the wall', hue: 310, category: 'new' },
-  { id: 'warp', name: 'Hyperspace', note: 'Rainbow stars rush past you', hue: 190, category: 'new' },
-  { id: 'fireworks', name: 'Send fireworks', note: 'Colorful bursts for the victory lap', hue: 25, category: 'new' },
-  { id: 'marquee', name: 'Say something', note: 'Your own message in big moving pixel letters', hue: 70, category: 'new' },
-  { id: 'vortex', name: 'Rainbow vortex', note: 'A spiral with no exit', hue: 290 },
-  { id: 'plasma', name: 'Acid plasma', note: 'Liquid color interference', hue: 130 },
+  { id: 'warp', name: 'Hyperspace', note: 'Colored streaks moving out from the center', hue: 190, category: 'new' },
+  { id: 'fireworks', name: 'Fireworks', note: 'Expanding bursts of color', hue: 25, category: 'new' },
+  { id: 'marquee', name: 'Scrolling text', note: 'Your message in large pixel letters', hue: 70, category: 'new' },
+  { id: 'vortex', name: 'Rainbow vortex', note: 'A rotating rainbow spiral', hue: 290 },
+  { id: 'plasma', name: 'Acid plasma', note: 'Waves of shifting color', hue: 130 },
   { id: 'kaleido', name: 'Kaleidoscope', note: 'Sixfold neon symmetry', hue: 35 },
-  { id: 'tunnel', name: 'Cosmic tunnel', note: 'Falling into the spectrum', hue: 220 },
+  { id: 'tunnel', name: 'Cosmic tunnel', note: 'Moving rings of color', hue: 220 },
   { id: 'aurora', name: 'Neon tide', note: 'Slow waves of electric color', hue: 165 },
   { id: 'liquid', name: 'Liquid dream', note: 'Melting rainbow contours', hue: 330 },
 ];

@@ -1,14 +1,14 @@
-import { colorAt, mapPoints, makeFrame } from './effects.mjs?v=2';
+import { colorAt, mapPoints, makeFrame } from './effects.mjs?v=5';
 const boardCanvas=document.getElementById('home-board'), context=boardCanvas.getContext('2d');
 const toggle=document.getElementById('home-motion');
 let moving=!matchMedia('(prefers-reduced-motion: reduce)').matches, points=[], time=5, last=performance.now(), lastPaint=0, dirty=true;
-function updateToggle(){toggle.textContent=moving?'Pause motion':'Play motion';toggle.setAttribute('aria-pressed',String(moving));}
+function updateToggle(){toggle.textContent=moving?'Pause preview':'Play preview';toggle.setAttribute('aria-pressed',String(moving));}
 updateToggle();toggle.addEventListener('click',()=>{moving=!moving;dirty=true;updateToggle();});
 for(const canvas of document.querySelectorAll('[data-taste]')){
   canvas.width=360;canvas.height=150;const ctx=canvas.getContext('2d');
   for(let y=0;y<150;y+=7)for(let x=0;x<360;x+=7){const rgb=colorAt(canvas.dataset.taste,(x/360-.5)*2,(.5-y/150)*1.5,5,1);ctx.fillStyle=`rgb(${rgb.join(',')})`;ctx.beginPath();ctx.arc(x+3,y+3,2.3,0,Math.PI*2);ctx.fill();}
 }
-try{const response=await fetch('/boards.json');if(!response.ok)throw Error();const data=await response.json();points=mapPoints(data.boards.find(b=>b.id===10),[1,20]);}catch{toggle.disabled=true;toggle.textContent='Explore the effects';}
+try{const response=await fetch('/boards.json');if(!response.ok)throw Error();const data=await response.json();points=mapPoints(data.boards.find(b=>b.id===10),[1,20]);}catch{toggle.disabled=true;toggle.textContent='Preview unavailable';}
 function draw(now){
   const dt=Math.min((now-last)/1000,.1);last=now;
   if(moving&&!document.hidden)time+=dt*1.2;
