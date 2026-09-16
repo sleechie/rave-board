@@ -1,11 +1,15 @@
 import { ADVERTISING, UART, TX, apiFromName, BoardTransport, BoardPlayer, quantize } from './protocol.mjs?v=3';
-import { EFFECTS, makeFrame, mapPoints, cornerFrame, colorAt, gravityPhase } from './effects.mjs?v=6';
+import { EFFECTS, makeFrame, mapPoints, cornerFrame, colorAt, gravityPhase } from './effects.mjs?v=7';
+import { PATTERNS,buildPoints,frameFor } from './patterns.mjs?v=7';
+import { loadHoldShapes,drawHoldShapes } from './hold-view.mjs?v=7';
 import { connectionSupport } from './compatibility.mjs?v=4';
 
 const $ = id => document.getElementById(id);
 const canvas = $('board'), ctx = canvas.getContext('2d');
 const support = connectionSupport({ userAgent:navigator.userAgent, platform:navigator.platform, maxTouchPoints:navigator.maxTouchPoints, bluetooth:Boolean(navigator.bluetooth), secure:isSecureContext });
 let boards = [], board, points = [], effect = 'tour';
+let polygons=null,shapeError=false,shapeRequest=0,preferredView='shapes',preferredVersion='adapted';
+const version=()=>board?.family==='Original'?document.querySelector('[name=variant]:checked').value:'original';
 let time = 5, lastTime = performance.now(), previewing = false;
 let device = null, transport = null, player = null, wakeLock = null;
 let busy = false, testing = false, lastSent = null, testFrame = null;
@@ -37,13 +41,32 @@ function updateControls() {
   $('preview-label').textContent = stopPending ? 'Stopping' : viewCleared ? 'Stopped' : running ? 'Last frame sent' : testing ? 'Corner test' : 'Preview';
   $('preview').textContent = previewing ? 'Pause preview' : 'Preview';
   $('preview').disabled = running || busy || !board;
+  $('version-label').textContent=version()==='adapted'?'Adapted':'Original';
+  $('effect-note').textContent=effect==='tour'?'Plays the built-in effects in sequence.':(version()==='adapted'?PATTERNS:EFFECTS).find(e=>e.id===effect).note;
+  updateShapeNote();
+}
+function updateShapeNote(){
+  if(!board)return;
+  const note=$('shape-note');
+  if(board.family!=='Original'){note.textContent='Homewall uses the original patterns and dot preview.';return;}
+  if($('view').value==='dots'){note.textContent='Dots mark the LED positions.';return;}
+  if(shapeError){note.textContent='Hold shapes unavailable; showing dots. Reload to try again.';return;}
+  if(!polygons){note.textContent='Loading hold shapes...';return;}
+  const missing=points.filter(p=>!polygons.get(p.position)).length;
+  note.textContent=missing?`Traced hold shapes; ${missing} approximate rings. Glow is approximate.`:'Traced hold shapes. Glow is approximate.';
+}
+async function updateShapes(){
+  const request=++shapeRequest;polygons=null;shapeError=false;
+  try{const shapes=await loadHoldShapes(board);if(request!==shapeRequest)return;polygons=shapes;}
+  catch{if(request!==shapeRequest)return;shapeError=true;}
+  needsRender=true;updateShapeNote();
 }
 function save() {
   try { localStorage.setItem('rave-board', JSON.stringify({ boardId: board.id, sets: selectedSets() })); } catch {}
 }
 function selectedSets() { return [...$('sets').querySelectorAll('input:checked')].map(el => Number(el.value)); }
 function updatePoints() {
-  points = mapPoints(board, selectedSets());
+  points = board.family==='Original'?buildPoints(board,selectedSets()):mapPoints(board,selectedSets());
   $('led-count').textContent = `${points.length} holds`;
   $('board-summary').textContent = `${board.family}, ${board.name}`;
   if (points.length < 4) status('Select at least one installed hold set.');
@@ -62,7 +85,12 @@ function chooseBoard(id, initial = false) {
     label.append(input, document.createTextNode(set.name)); $('sets').append(label);
   }
   testing = false; testFrame = null; lastSent = null;
-  updatePoints();
+  const original=board.family==='Original';
+  $('view').querySelector('[value=shapes]').disabled=!original;
+  $('view').value=original?preferredView:'dots';
+  document.querySelector('[name=variant][value=adapted]').disabled=!original;
+  document.querySelector(`[name=variant][value=${original?preferredVersion:'original'}]`).checked=true;
+  updateShapes();updatePoints();
 }
 function chooseFamily(family, id, initial = false) {
   $('size').replaceChildren();
@@ -75,6 +103,7 @@ function chooseFamily(family, id, initial = false) {
 }
 
 function pickEffect(id) {
+  $('effect-select').value=id;
   effect = id; testing = false; testFrame = null; viewCleared = false;
   time = id === 'marquee' ? 4 : 0;
   if (!isRunning()) previewing = true;
@@ -96,6 +125,7 @@ function requestUpdate() {
   status('Applying your latest change...');
 }
 for (const e of EFFECTS) {
+  $('effect-select').append(new Option(e.name,e.id));
   const button = document.createElement('button');
   button.className = 'effect'; button.dataset.effect = e.id;
   button.title = e.note; button.setAttribute('aria-pressed', 'false');
@@ -110,6 +140,9 @@ for (const e of EFFECTS) {
   button.addEventListener('click', () => pickEffect(e.id));
   $('effects').append(button);
 }
+$('effect-select').addEventListener('change',()=>pickEffect($('effect-select').value));
+$('view').addEventListener('change',()=>{preferredView=$('view').value;needsRender=true;updateShapeNote();});
+for(const input of document.querySelectorAll('[name=variant]'))input.addEventListener('change',()=>{preferredVersion=input.value;testing=false;testFrame=null;viewCleared=false;if(!isRunning())previewing=true;requestUpdate();updateControls();});
 $('tour').addEventListener('click', () => pickEffect('tour'));
 $('layout').addEventListener('change', () => chooseFamily($('layout').value));
 $('size').addEventListener('change', () => chooseBoard($('size').value));
@@ -119,7 +152,10 @@ $('fps').addEventListener('change', requestUpdate);
 $('message').addEventListener('input', () => { if (!isRunning()) previewing = true; viewCleared = false; requestUpdate(); updateControls(); });
 $('preview').addEventListener('click', () => { previewing = !previewing; testing = false; viewCleared = false; updateControls(); });
 
-function currentFrame() { return makeFrame(points, effect, time, Number($('brightness').value) / 100, { message: $('message').value }); }
+function currentFrame() {
+  const brightness=Number($('brightness').value)/100,options={message:$('message').value};
+  return board.family==='Original'?frameFor(points,effect,version(),time,brightness,options):makeFrame(points,effect,time,brightness,options);
+}
 function render(now) {
   const dt = Math.min((now - lastTime) / 1000, 0.15); lastTime = now;
   if (previewing || isRunning()) time += dt * Number($('speed').value);
@@ -147,7 +183,8 @@ function render(now) {
     const frame = viewCleared ? [] : testing && testFrame ? testFrame : isRunning() && lastSent ? lastSent : currentFrame();
     const colors = new Map(frame.map(p => [p.position, quantize(p.rgb, transport?.level || 3)]));
     const radius = Math.max(2.2, Math.min(6, bw / 75));
-    for (const p of points) {
+    const drawn=$('view').value==='shapes'&&drawHoldShapes(ctx,{board,points,polygons,colors,width:bw,height:bh,ox,oy});
+    if(!drawn)for (const p of points) {
       const rgb = colors.get(p.position) || [0,0,0], lit = rgb.some(v => v > 0);
       const color = lit ? `rgb(${rgb.join(',')})` : '#201b2d';
       const x=ox+p.u*bw,y=oy+p.v*bh;

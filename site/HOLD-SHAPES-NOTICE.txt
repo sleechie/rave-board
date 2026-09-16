@@ -1,0 +1,31 @@
+Rave Board hold-shape preview: source and changes
+
+The polygon outlines in /holds/*.json are derived from Boardsesh:
+https://github.com/boardsesh/boardsesh
+Revision: cd54e96b5e9483688525afd6d349c96ff9ff6266
+Source: packages/shared/board-art-geometry/src/generated/kilter/1-{boardId}.cjs
+Documentation: https://github.com/boardsesh/boardsesh/blob/cd54e96b5e9483688525afd6d349c96ff9ff6266/docs/board-art-geometry.md
+Boardsesh is distributed under the Apache License, Version 2.0.
+The complete license accompanies this page at /BOARDSESH-LICENSE.txt.
+
+Modified for Rave Board: selected the six Kilter Original layouts, converted
+placement IDs to LED positions, and added board coordinates, hold-set IDs, artwork
+dimensions and provenance. Polygon offsets remain as supplied upstream. The
+conversion script lives at scripts/import-hold-shapes.mjs
+in the Rave Board source. No Boardsesh runtime or source raster images are bundled.
+
+LED/placement mapping and source-art dimensions use Grip Connect:
+https://github.com/Stevie-Ray/hangtime-grip-connect
+Revision: 861a0640630ee7edd349833a822e0c6626633fd9
+Copyright (c) 2024, Stevie-Ray Hartog. BSD 2-Clause license:
+/THIRD-PARTY-LICENSE.txt
+
+Boardsesh traced these silhouettes from Kilter/Aurora board artwork. These are
+image-derived shapes, not factory CAD, physical measurements or calibrated LED
+rim boundaries. The displayed glow is approximate. The 12 x 14 artwork lacks
+51 shapes, which are explicitly shown as approximate rings.
+
+The repository licenses do not establish a separate permission grant or official
+endorsement from Kilter/Aurora for the underlying artwork. Rave Board makes
+no claim of manufacturer affiliation, ownership of that artwork or measured
+optical accuracy.

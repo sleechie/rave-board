@@ -45,9 +45,9 @@ test('matches the independent published Grip Connect API 2 and 3 wire fixtures',
 });
 
 const data = JSON.parse(fs.readFileSync(new URL('../site/boards.json',import.meta.url)));
-test('all 16 maps produce valid replacement frames for both controller versions and all 13 modes', () => {
+test('all 16 maps produce valid replacement frames for both controller versions and all 14 modes', () => {
   assert.equal(data.boards.length,16);
-  assert.equal(EFFECTS.length,12);
+  assert.equal(EFFECTS.length,13);
   for (const board of data.boards) {
     const points = mapPoints(board,board.sets.map(s=>s.id));
     assert.ok(points.length >= 100);

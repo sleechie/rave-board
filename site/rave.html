@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><meta name="theme-color" content="#101210">
-  <title>Rave | Rave Board</title><meta name="description" content="Pick a light show, set the speed, and connect to your Kilter Board. Twelve built-in effects and a preview you can play with anywhere.">
-  <link rel="icon" href="/favicon.svg?v=5"><link rel="stylesheet" href="/style.css?v=5"><link rel="stylesheet" href="/website.css?v=5">
+  <title>Rave | Rave Board</title><meta name="description" content="Pick a light show, set the speed, and connect to your Kilter Board. Thirteen built-in effects and a preview you can play with anywhere.">
+  <link rel="icon" href="/favicon.svg?v=5"><link rel="stylesheet" href="/style.css?v=7"><link rel="stylesheet" href="/website.css?v=5">
 </head>
 <body>
   <a class="skip-link" href="#main-content">Skip to content</a>
@@ -14,9 +14,10 @@
     <div class="studio">
       <section class="stage" aria-label="Light show preview">
         <div class="stage-top"><span id="preview-label">Preview</span><span id="led-count">Loading hold map...</span></div>
+        <div class="view-control"><label for="view">Preview style</label><select id="view"><option value="shapes">Hold shapes</option><option value="dots">Dots</option></select><span id="version-label">Adapted</span></div>
         <div class="canvas-wrap"><canvas id="board" aria-label="Animated colors at actual Kilter hold positions"></canvas></div>
         <div class="stage-bottom"><div><span class="tiny">Current effect</span><strong id="effect-title">Cycle effects</strong></div><button id="preview" class="small-button">Preview</button></div>
-        <div class="stage-caption"><span id="effect-note">Plays the built-in effects in sequence.</span><span class="hardware-note">Board motion may be slower than the preview.</span></div>
+        <div class="stage-caption"><span id="effect-note">Plays the built-in effects in sequence.</span><span id="shape-note" class="hardware-note">Loading hold shapes...</span><span class="hardware-note">Board motion may be slower than the preview.</span></div>
       </section>
       <div class="controls">
         <section class="panel setup"><div class="section-label"><span>Board</span><span id="connection-badge" class="badge">Preview only</span></div>
@@ -27,7 +28,7 @@
           </details>
           <div class="setup-helper"><button id="test" class="text-button" disabled>Test corners</button><a href="/about#how">Connection help</a></div>
         </section>
-        <section class="panel effect-panel"><div class="section-label"><span>Effects</span><span class="tiny">12 effects</span></div>
+        <section class="panel effect-panel"><div class="section-label"><span>Effects</span><span class="tiny">13 effects</span></div>
           <button id="tour" class="tour selected" aria-pressed="true"><span><strong>Cycle effects</strong><small>Play each effect in sequence.</small></span></button>
           <div class="slider-row speed-control"><label for="speed">Speed <output id="speed-value">1.0×</output></label><input id="speed" type="range" min="0.1" max="32" step="0.1" value="1"><div class="range-ends"><span>0.1×</span><span>32×</span></div></div>
           <div id="effects" class="effects"></div>
@@ -43,12 +44,13 @@
       </div>
       <section class="control-dock" aria-label="Playback controls">
         <div class="dock-top"><div id="status" class="status" role="status" aria-live="polite">Loading board maps...</div><button id="disconnect" class="disconnect" hidden>Disconnect now</button></div>
+        <div class="quick-controls"><label class="quick-effect" for="effect-select">Animation<select id="effect-select"><option value="tour">Cycle effects</option></select></label><fieldset id="version-control" class="version-control"><legend>Pattern version</legend><label><input type="radio" name="variant" value="original">Original</label><label><input type="radio" name="variant" value="adapted" checked>Adapted</label></fieldset></div>
         <div class="dock-buttons"><button id="connect" class="connect" disabled>Connect board</button><button id="play" class="play" disabled>Play on board</button><button id="stop" class="stop" disabled>Stop & clear</button></div>
       </section>
     </div>
     <p class="rave-note">Ask the gym staff, keep the wall clear, and keep this page open while playing. <a href="/about#how">Setup instructions.</a></p>
     <footer class="site-footer"><span>Rave Board</span><div><a href="/about">About & help</a><span>Independent project. Not affiliated with Kilter.</span></div></footer>
   </main>
-  <script type="module" src="/app.mjs?v=6"></script>
+  <script type="module" src="/app.mjs?v=7"></script>
 </body>
 </html>

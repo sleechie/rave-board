@@ -1,6 +1,6 @@
 # Rave Board
 
-A browser-based psychedelic light show for Kilter Original and Homewall LED boards. Twelve effects plus an automatic tour: green Matrix-style rain, Gravity Lab, laser cathedral, hyperspace, fireworks, a custom scrolling message, rainbow vortex, acid plasma, kaleidoscope, cosmic tunnel, neon tide, and liquid dream. Works through the existing Bluetooth controller; no firmware changes or extra hardware.
+A browser-based psychedelic light show for Kilter Original and Homewall LED boards. Thirteen effects plus an automatic tour: green Matrix-style rain, Gravity Lab, laser cathedral, hyperspace, fireworks, a custom scrolling message, rainbow vortex, acid plasma, kaleidoscope, cosmic tunnel, neon tide, liquid dream, and a green stick-figure climber with a fall and ground-up explosion. Works through the existing Bluetooth controller; no firmware changes or extra hardware.
 
 ## At the gym (laptop recommended)
 
@@ -14,8 +14,15 @@ A browser-based psychedelic light show for Kilter Original and Homewall LED boar
 
 Android Chrome board connections are quietly enabled when Web Bluetooth is available, but remain experimental. iPhone and iPad are preview-only in this public release, including specialist browsers. The Rave page explains that policy and does not offer a board connection on iOS.
 
+## Patterns and hold shapes
+
+Kilter Original defaults to **Adapted**, which gives bolt-ons and smaller screw-ons distinct roles. Switch to **Original** to compare the existing designs, including on the hold-shape viewer. The preview style selector switches between traced hold shapes and dots; it changes only the drawing, not the board output. Homewall keeps its original patterns and dots. The animation dropdown and version toggle stay pinned on mobile.
+
+Original hold shapes come from Boardsesh artwork traces, with complete coverage for the default 476-hold board. The 12×14 source lacks 51 outlines, explicitly shown as approximate rings. Glow remains an estimate. Shape-source attribution and Apache-2.0 licensing are bundled in `HOLD-SHAPES-NOTICE.txt` and `BOARDSESH-LICENSE.txt`.
+
 ## New effects and speed
 
+- **Climber:** a green stick figure climbs for 18 seconds, hangs for 2, falls for 2, then sets off a rising burst and fading embers. The 32-second scene follows the speed slider and is included in Cycle effects.
 - **Make it rain:** staggered falling green heads and fading tails.
 - **Gravity Lab:** large, thick GRAVITY LAB letters scroll for 20 seconds at 1x, followed by a 12-second two-line display with GRAVITY scrolling on top and a large LAB fixed below. The blue/white/yellow faces have darker edges and an offset shadow. A few twinkles stay outside the text. Both handholds and selected screw-ons contribute to the lettering. The global speed slider scales the whole sequence.
 - **Laser cathedral / Hyperspace / Send fireworks:** moving neon beams, outward streaks, and colored bursts.
@@ -38,7 +45,7 @@ The **0.1×–32×** slider controls visual motion, independently of Bluetooth t
 - Connected but dark: open Connection settings after disconnecting. Auto reads a trailing `@2` or `@3` in the board name and defaults to API 2 when absent. Try API 3 if the controller doesn't advertise a version. Unknown versions are refused.
 - Wrong positions: select the exact layout, size, LED kit and installed hold sets. Hardware discovery cannot automatically identify your layout.
 - Partial/glitchy frames: disconnect, change Bluetooth pacing to Gentle and try again. Fast is now the default and removes the added delay; every GATT write is still awaited.
-- Slow animations: the controller receives a full board each frame, in 20-byte writes. The maximum target is 4 frames/sec, but the measured rate may be much lower. Turn Motion down for a slower evolving show. The connected preview displays the last completely transmitted frame.
+- Slow animations: the controller receives a full board each frame, in 20-byte writes. The default target is 30 frames/sec, but the measured rate may be much lower. Turn Speed down for a slower evolving show. The connected preview displays the last completely transmitted frame.
 - Switching tabs automatically attempts to stop and clear. Closing the browser or losing Bluetooth can leave the last image lit because no clear command can be guaranteed. Reconnect with the Kilter app and send a climb to replace it.
 
 ## Verification and limits
@@ -47,7 +54,7 @@ Animation playback and scrolling Gravity Lab text have been reported working on 
 
 Older API 2 controllers have 2 bits per RGB channel; API 3 uses 3/3/2 bits. The preview quantizes colors accordingly. These are rolling color patterns, with no explicit strobe effect, but the low-color LED hardware still produces discrete color changes.
 
-The site has no account system, board telemetry, microphone, or cloud control. The page sends light commands only to the Bluetooth device explicitly chosen by the user. Settings are saved in local browser storage. Google Fonts provides the typefaces; the site host receives ordinary website requests.
+The site has no account system, board telemetry, microphone, or cloud control. The page sends light commands only to the Bluetooth device explicitly chosen by the user. Settings are saved in local browser storage. The site host receives ordinary website requests; assets and fonts require no third-party requests.
 
 ## Sources and prior work
 

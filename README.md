@@ -19,3 +19,5 @@ Run locally with Node 24+: `npm start`, then open `http://localhost:8080`. `PORT
 Railway uses the root Dockerfile and `railway.json`, with `/healthz` for readiness. The project is **rave-board**, service **raveboard**, in the personal **sleechie's Projects** workspace (never AMA). GitHub source is `sleechie/kilter-trip`, branch `main`.
 
 Software checks cover packet formatting and cancellation, mobile connection policy, and HTTP routing. The latest stop/switch changes still need a physical-board retest; mobile layout checks are not Bluetooth hardware validation.
+
+Kilter Original now defaults to adapted patterns and traced hold shapes. Original patterns and the dot viewer remain selectable. Animation and pattern-version controls stay pinned on mobile. Climber is a 32-second climb, fall and ground-up burst, also included in Cycle effects. Homewall retains its original patterns and dots.

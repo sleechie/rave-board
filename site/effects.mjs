@@ -1,8 +1,10 @@
+import { CLIMBER,climberColor,climberFrame } from './climber.mjs?v=7';
 import { cleanMessage, letterPixel, textDuration } from './lettering.mjs?v=6';
 import { gravityColor, gravityPhase } from './gravity.mjs?v=6';
 export { gravityPhase };
 
 export const EFFECTS = [
+  CLIMBER,
   { id: 'rain', name: 'Make it rain', note: 'Falling green lights with long trails', hue: 125, category: 'new' },
   { id: 'gravity', name: 'Gravity Lab', note: 'Large scrolling letters, then GRAVITY above LAB', hue: 60, category: 'new' },
   { id: 'lasers', name: 'Laser cathedral', note: 'Crossing neon beams sweep the wall', hue: 310, category: 'new' },
@@ -34,6 +36,7 @@ function rainAt(x, y, t, intensity) {
 function specialColor(id, x, y, time, intensity, options) {
   const point = options.point || { x, y };
   switch (id) {
+    case 'climber': return climberColor(point,time,intensity);
     case 'rain': return rainAt(x, y, time, intensity);
     case 'gravity': return gravityColor(point,time,intensity);
     case 'marquee': {
@@ -130,8 +133,9 @@ export function colorAt(id, x, y, time, intensity = 1, options = {}) {
   return hsv(h, 0.96, v * intensity);
 }
 
-export const TOUR = ['vortex','rain','plasma','lasers','gravity','kaleido','warp','fireworks','tunnel','aurora','liquid'];
+export const TOUR = ['vortex','rain','plasma','lasers','gravity','climber','kaleido','warp','fireworks','tunnel','aurora','liquid'];
 export function makeFrame(points, effect, time, brightness = 1, options = {}) {
+  if(effect==='climber')return climberFrame(points,time,brightness);
   let id = effect, next, mix = 0, sceneTime = time;
   if (effect === 'tour') {
     const scene = time / 32;
