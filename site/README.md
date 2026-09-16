@@ -1,4 +1,4 @@
-# Kilter Trip
+# Rave Board
 
 A browser-based psychedelic light show for Kilter Original and Homewall LED boards. Thirteen effects plus an automatic tour: green Matrix-style rain, Gravity Lab, Purgatory, laser cathedral, hyperspace, fireworks, a custom scrolling message, rainbow vortex, acid plasma, kaleidoscope, cosmic tunnel, neon tide, and liquid dream. Works through the existing Bluetooth controller; no firmware changes or extra hardware.
 
@@ -12,7 +12,7 @@ A browser-based psychedelic light show for Kilter Original and Homewall LED boar
 6. Choose **The full trip** or an individual effect, then **Play on board**. One **0.1×–32× speed slider** controls every animation, including logo and text sequences. Speed 1× and brightness 85% are the defaults. Click an effect to start its on-screen preview. Keep the tab visible, Bluetooth in range, and the laptop awake.
 7. **Stop & clear lights** discards the unfinished frame after its current short packet and sends a clear command. It shows how long sending took. **Disconnect now** immediately releases Bluetooth, including during a stalled write; it does not guarantee the lights are cleared. Stop & clear first when possible, then disconnect and return to the Kilter app.
 
-Android Chrome also supports the connection. On iPhone/iPad use [Bluefy](https://apps.apple.com/us/app/bluefy-web-ble-browser/id1492822055); Safari and ordinary Chrome on iOS cannot use Web Bluetooth. Bluefy support is based on its documented API, not a physical iPhone/board test.
+Android Chrome board connections are quietly enabled when Web Bluetooth is available, but remain experimental. iPhone and iPad are preview-only in this public release, including specialist browsers. The Rave page explains that policy and does not offer a board connection on iOS.
 
 ## New effects and speed
 
@@ -61,14 +61,14 @@ Research found existing building blocks, but no verified ready-to-use full-wall 
 
 ## Run or develop from source
 
-Unzip the source download. No npm dependencies are required to run the site or tests.
+Use the personal GitHub repository with Node 24 or later. No npm dependencies are required to run the site or tests.
 
 ```sh
 cd kilter-trip
-python3 -m http.server 8080 --directory site --bind 127.0.0.1
+npm start
 ```
 
-Open `http://localhost:8080` in Chrome/Edge on the **same laptop**. On Windows, `py -m http.server 8080 --directory site --bind 127.0.0.1` works if Python is installed. Web Bluetooth requires HTTPS or localhost; a plain HTTP LAN address will not work. The permanent hosted link is the easiest option.
+Open `http://localhost:8080` in Chrome/Edge on the same computer. Web Bluetooth requires HTTPS or localhost. Production is https://raveboard.up.railway.app/ and uses the Dockerfile on Railway. The original here.now prototype is a separate earlier deployment.
 
 ```sh
 npm test
