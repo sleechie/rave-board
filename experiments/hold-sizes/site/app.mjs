@@ -42,7 +42,7 @@ function controls(){
   const pattern=PATTERNS.find(p=>p.id===$('pattern').value);
   $('message-field').hidden=pattern.id!=='marquee';
   $('variant-label').textContent=variant()==='adapted'?'Adapted pattern':'Original pattern';
-  $('pattern-note').textContent=variant()==='adapted'?pattern.note:'The first two previews and board output use the original animation. Hold shapes still shows the adapted version.';
+  $('pattern-note').textContent=variant()==='adapted'?pattern.note:'The original animation, shown in all three preview styles.';
   for(const el of document.querySelectorAll('.selected-version'))el.textContent=variant()==='adapted'?'Adapted animation':'Original animation';
 }
 async function loadShapes(selectedBoard){
@@ -93,15 +93,7 @@ $('foot-size').addEventListener('input',()=>{$('foot-size-value').textContent=$(
 $('fps').addEventListener('change',()=>{if(running())player.refresh();});
 $('preview').addEventListener('click',()=>{previewing=!previewing;cleared=false;testFrame=null;controls();});
 $('restart').addEventListener('click',()=>{time=0;changed();});
-const animationFrame=(version=variant())=>frameFor(points,$('pattern').value,version,time,Number($('brightness').value)/100,{message:$('message').value});
-let pendingFrames=new WeakMap(),lastAdapted=null;
-const currentFrame=()=>{
-  const frame=animationFrame();
-  // Keep the shaped preview on the same animation instant as a completed BLE
-  // frame, even when the selected board output uses the original version.
-  pendingFrames.set(frame,variant()==='adapted'?frame:animationFrame('adapted'));
-  return frame;
-};
+const currentFrame=()=>frameFor(points,$('pattern').value,variant(),time,Number($('brightness').value)/100,{message:$('message').value});
 
 function drawCanvas(index,frame){
   const canvas=canvases[index],ctx=contexts[index],rect=canvas.getBoundingClientRect(),dpr=Math.min(devicePixelRatio||1,2);
@@ -154,9 +146,9 @@ function render(now){
   const dt=Math.min((now-lastTime)/1000,.15);lastTime=now;
   if(previewing||running())time+=dt*Number($('speed').value);
   if(board&&(dirty||previewing&&!running()&&!cleared)&&now-lastPaint>33&&!document.hidden){
-    const frame=cleared?[]:testFrame||running()&&lastSent||animationFrame();
-    const adapted=cleared?[]:testFrame||running()&&lastAdapted||(variant()==='adapted'?frame:animationFrame('adapted'));
-    drawCanvas(0,frame);drawCanvas(1,frame);drawCanvas(2,adapted);dirty=false;lastPaint=now;
+    const frame=cleared?[]:testFrame||running()&&lastSent||currentFrame();
+    for(let i=0;i<canvases.length;i++)drawCanvas(i,frame);
+    dirty=false;lastPaint=now;
   }
   requestAnimationFrame(render);
 }
@@ -187,7 +179,7 @@ $('connect').addEventListener('click',async()=>{
     transport=new BoardTransport(characteristic,level,onError,Number($('pacing').value));
     player=new BoardPlayer(transport,currentFrame,(frame,bytes)=>{
       if(device!==candidate)return;
-      lastSent=frame;lastAdapted=pendingFrames.get(frame)||null;pendingFrames.delete(frame);dirty=true;frames++;
+      lastSent=frame;dirty=true;frames++;
       status(`Sending ${variant()} ${$('pattern').selectedOptions[0].textContent.toLowerCase()}. ${(frames/((performance.now()-started)/1000)).toFixed(1)} frames/sec, ${bytes} bytes/frame.`);
     },onError,()=>Number($('fps').value));
     status(`Connected to ${candidate.name||'board'}. Test corners, then choose which pattern version to play.`);
@@ -201,7 +193,7 @@ $('test').addEventListener('click',async()=>{
   }catch(error){if(request===action)failed(error);}finally{if(request===action){busy=false;controls();}}
 });
 $('play').addEventListener('click',()=>{
-  action++;cleared=false;testFrame=null;lastSent=null;lastAdapted=null;pendingFrames=new WeakMap();previewing=false;frames=0;started=performance.now();
+  action++;cleared=false;testFrame=null;lastSent=null;previewing=false;frames=0;started=performance.now();
   player.start();awake();controls();status(`Sending ${variant()} pattern...`);
 });
 function stop(){

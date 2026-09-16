@@ -21,11 +21,11 @@ Three canvases compare the previews:
 
 1. **Uniform dots** shows the selected Original or Adapted animation with the existing equal-dot drawing.
 2. **Two-size rings** shows the same selected frame, using larger bolt-on rings and smaller screw-on rings. The foothold-size slider affects only this canvas; the default 45% diameter remains a visual estimate.
-3. **Hold shapes** always shows the Adapted animation, using individual silhouettes traced from board artwork. These preserve each hold's relative size, orientation and installed location. The glow is approximate, not a measurement of the LED rim.
+3. **Hold shapes** shows the selected Original or Adapted animation, using individual silhouettes traced from board artwork. These preserve each hold's relative size, orientation and installed location. The glow is approximate, not a measurement of the LED rim.
 
-All three share the selected effect, speed, brightness, time, pause, restart, clear and installed hold sets. Test corners is displayed across all three. The Original / Adapted choice still controls the first two previews and actual Bluetooth output. During board playback the shaped preview uses the adapted frame from the same animation instant as the completed transmitted frame.
+All three share the selected effect, pattern version, speed, brightness, time, pause, restart, clear and installed hold sets. Test corners is displayed across all three. The Original / Adapted choice controls every preview and actual Bluetooth output. Every canvas renders the same frame; during board playback that is the most recently completed transmitted frame.
 
-On mobile, the animation dropdown and Original / Adapted toggle move into the fixed bottom controls so effects and versions can be changed while watching the previews. Both return to the settings section on larger screens. The existing controls are moved without duplicate inputs or separate selection state; hold shapes continues to show the adapted version.
+On mobile, the animation dropdown and Original / Adapted toggle move into the fixed bottom controls so effects and versions can be changed while watching the previews. Both return to the settings section on larger screens. The existing controls are moved without duplicate inputs or separate selection state.
 
 Shapes load only for the selected board, from this service. All 476 holds on the 12×12-with-kickboard have outlines. The 7×10, 8×12, 12×12 without kickboard and 16×12 layouts also have complete shape maps. The 12×14 source is missing 51 outlines; those use approximate rings and the caption reports that count. A failed shape download leaves the existing previews usable and displays a message in the third panel.
 

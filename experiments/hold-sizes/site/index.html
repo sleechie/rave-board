@@ -9,7 +9,7 @@
 <body>
 <main>
   <header><a href="https://raveboard.up.railway.app/rave" target="_blank" rel="noopener">Main Rave page</a><span>Unlisted experiment</span></header>
-  <section class="intro"><h1>Hold-size experiment</h1><p>Compare dots, two-size rings, and traced hold shapes. The first two previews follow your pattern version; the hold shapes always show the adapted animation.</p><p class="muted">This is a separate test deployment. Settings reset when you reload or close this tab. Disconnect the main Rave page before connecting here.</p></section>
+  <section class="intro"><h1>Hold-size experiment</h1><p>Compare dots, two-size rings, and traced hold shapes. Switch between Original and Adapted to see either animation across all three previews.</p><p class="muted">This is a separate test deployment. Settings reset when you reload or close this tab. Disconnect the main Rave page before connecting here.</p></section>
   <aside id="compatibility" hidden></aside>
   <section class="settings" aria-label="Experiment controls">
     <div id="animation-slot"><div id="animation-control"><label for="pattern">Animation</label><select id="pattern"></select><p class="field-note">All 12 effects, each with an Original and Adapted version.</p></div></div>
@@ -26,10 +26,10 @@
   <section class="comparison" aria-label="Three animation previews">
     <figure><figcaption><strong>Uniform dots</strong><span class="selected-version">Adapted animation</span></figcaption><canvas id="uniform" aria-label="Selected animation shown as equal-sized dots"></canvas></figure>
     <figure><figcaption><strong>Two-size rings</strong><span class="selected-version">Adapted animation</span></figcaption><canvas id="sized" aria-label="Selected animation with larger bolt-on rings and smaller screw-on rings"></canvas></figure>
-    <figure><figcaption><strong>Hold shapes</strong><span>Adapted animation</span></figcaption><canvas id="shaped" aria-label="Adapted animation on traced hold shapes in their installed positions"></canvas><p id="shape-status" class="shape-status" role="status" aria-live="polite">Loading hold shapes...</p></figure>
+    <figure><figcaption><strong>Hold shapes</strong><span class="selected-version">Adapted animation</span></figcaption><canvas id="shaped" aria-label="Selected animation on traced hold shapes in their installed positions"></canvas><p id="shape-status" class="shape-status" role="status" aria-live="polite">Loading hold shapes...</p></figure>
   </section>
   <div class="legend"><span><i class="bolt" aria-hidden="true"></i> Larger bolt-ons</span><span><i class="screw" aria-hidden="true"></i> Smaller screw-ons</span><span id="hold-count"></span></div>
-  <p class="caveat">Hold shapes are traced from board artwork; the light around their edges is approximate. Speed, brightness, pause, and clear apply to all three previews. The pattern version selects what plays on the wall. The size estimate affects only the two-size rings.</p>
+  <p class="caveat">Hold shapes are traced from board artwork; the light around their edges is approximate. The pattern version, speed, brightness, pause, and clear apply to all three previews. The selected version also plays on the wall. The size estimate affects only the two-size rings.</p>
   <details class="connection-settings"><summary>Connection settings</summary><div class="settings">
     <div><label for="protocol">Controller protocol</label><select id="protocol"><option value="auto">Auto</option><option value="3">API 3</option><option value="2">API 2</option></select></div>
     <div><label for="pacing">Bluetooth pacing</label><select id="pacing"><option value="0">Fast</option><option value="6">Balanced</option><option value="15">Gentle</option></select></div>
