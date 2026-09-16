@@ -17,7 +17,19 @@ Railway service ID: `6a6447b5-0b82-4e9c-aaf3-5d19b67e8581`.
 
 ## What it compares
 
-Both canvases display the exact same color frame. The left reproduces the existing equal-dot drawing; the right uses larger bolt-on rings and smaller screw-on rings. The foothold-size slider affects only drawing. The default 45% diameter is a visual estimate, not a physical measurement or brightness calibration. Bolt-on shapes vary too; this deliberately uses only two approximate classes.
+Three canvases compare the previews:
+
+1. **Uniform dots** shows the selected Original or Adapted animation with the existing equal-dot drawing.
+2. **Two-size rings** shows the same selected frame, using larger bolt-on rings and smaller screw-on rings. The foothold-size slider affects only this canvas; the default 45% diameter remains a visual estimate.
+3. **Hold shapes** always shows the Adapted animation, using individual silhouettes traced from board artwork. These preserve each hold's relative size, orientation and installed location. The glow is approximate, not a measurement of the LED rim.
+
+All three share the selected effect, speed, brightness, time, pause, restart, clear and installed hold sets. Test corners is displayed across all three. The Original / Adapted choice still controls the first two previews and actual Bluetooth output. During board playback the shaped preview uses the adapted frame from the same animation instant as the completed transmitted frame.
+
+On mobile, the single animation dropdown moves into the fixed bottom controls so effects can be changed while watching any preview. It returns to the settings section on larger screens. No duplicate dropdown or separate selection state is used.
+
+Shapes load only for the selected board, from this service. All 476 holds on the 12×12-with-kickboard have outlines. The 7×10, 8×12, 12×12 without kickboard and 16×12 layouts also have complete shape maps. The 12×14 source is missing 51 outlines; those use approximate rings and the caption reports that count. A failed shape download leaves the existing previews usable and displays a message in the third panel.
+
+Geometry sources, pinned revisions, changes and limitations: `site/HOLD-SHAPES-NOTICE.txt`. The Apache-2.0 license accompanies the assets. The runtime uses only static data and cached Canvas paths, without third-party requests or the Boardsesh runtime. Regenerate the data with `node scripts/import-hold-shapes.mjs /path/to/boardsesh /path/to/grip-connect`.
 
 The **Original / Adapted** choice changes the actual colors sent to the board:
 

@@ -2,12 +2,20 @@ import { PATTERNS, buildPoints, frameFor, footprint } from './model.mjs';
 import { ADVERTISING,UART,TX,apiFromName,BoardTransport,BoardPlayer,quantize } from './baseline/protocol.mjs';
 import { cornerFrame } from './baseline/effects.mjs';
 import { connectionSupport } from './baseline/compatibility.mjs';
+import { holdPolygons } from './hold-shapes.mjs';
 
 const $=id=>document.getElementById(id);
 for(const pattern of PATTERNS)$('pattern').append(new Option(pattern.name,pattern.id));
 $('pattern').value='gravity';
+const mobileControls=matchMedia('(max-width:620px)');
+function placeAnimationControl(){
+  $(mobileControls.matches?'mobile-animation-slot':'animation-slot').append($('animation-control'));
+}
+placeAnimationControl();mobileControls.addEventListener('change',placeAnimationControl);
 const support=connectionSupport({userAgent:navigator.userAgent,platform:navigator.platform,maxTouchPoints:navigator.maxTouchPoints,bluetooth:Boolean(navigator.bluetooth),secure:isSecureContext});
-const canvases=[$('uniform'),$('sized')],contexts=canvases.map(c=>c.getContext('2d'));
+const canvases=[$('uniform'),$('sized'),$('shaped')],contexts=canvases.map(c=>c.getContext('2d'));
+const shapeAssets=new Map();
+let polygons=null,pathCache=null;
 let boards=[],board,points=[],time=3,lastTime=performance.now(),lastPaint=0,dirty=true;
 let previewing=!matchMedia('(prefers-reduced-motion: reduce)').matches,cleared=false,lastSent=null,testFrame=null;
 let device=null,transport=null,player=null,wakeLock=null,busy=false,stopping=null,action=0,started=0,frames=0;
@@ -33,13 +41,34 @@ function controls(){
   const pattern=PATTERNS.find(p=>p.id===$('pattern').value);
   $('message-field').hidden=pattern.id!=='marquee';
   $('variant-label').textContent=variant()==='adapted'?'Adapted pattern':'Original pattern';
-  $('pattern-note').textContent=variant()==='adapted'?pattern.note:'A frozen copy of the current Rave Board animation. Only the two preview styles differ.';
+  $('pattern-note').textContent=variant()==='adapted'?pattern.note:'The first two previews and board output use the original animation. Hold shapes still shows the adapted version.';
+  for(const el of document.querySelectorAll('.selected-version'))el.textContent=variant()==='adapted'?'Adapted animation':'Original animation';
+}
+async function loadShapes(selectedBoard){
+  polygons=null;pathCache=null;$('shape-status').textContent='Loading hold shapes...';
+  if(!shapeAssets.has(selectedBoard.id)){
+    const request=fetch(new URL(`./holds/${selectedBoard.id}.json`,import.meta.url)).then(response=>{
+      if(!response.ok)throw Error('Hold shapes could not be loaded.');
+      return response.json();
+    }).then(data=>holdPolygons(selectedBoard,data));
+    shapeAssets.set(selectedBoard.id,request);
+    request.catch(()=>shapeAssets.delete(selectedBoard.id));
+  }
+  try{
+    const loaded=await shapeAssets.get(selectedBoard.id);
+    if(board!==selectedBoard)return;
+    polygons=loaded;
+    const count=points.filter(p=>polygons.get(p.position)).length,missing=points.length-count;
+    $('shape-status').textContent=missing?`${count} traced shapes; ${missing} holds use approximate rings.`:`${count} traced hold shapes. Glow is approximate.`;
+  }catch{if(board===selectedBoard)$('shape-status').textContent='Hold shapes could not load. Reload to try again.';}
+  dirty=true;
 }
 function setBoard(){
   board=boards.find(b=>b.id===Number($('size').value));
   points=buildPoints(board,selectedSets());lastSent=null;testFrame=null;
   const bolts=points.filter(p=>p.kind==='bolt').length;
   $('hold-count').textContent=`${bolts} bolt-ons / ${points.length-bolts} screw-ons`;
+  loadShapes(board);
   status(points.length?(support.canConnect?'Preview only. Connect and press Play when ready to test the wall.':'Preview only in this browser. Use Original and Adapted to compare.'):'Select at least one installed hold set.');
   controls();
 }
@@ -63,7 +92,15 @@ $('foot-size').addEventListener('input',()=>{$('foot-size-value').textContent=$(
 $('fps').addEventListener('change',()=>{if(running())player.refresh();});
 $('preview').addEventListener('click',()=>{previewing=!previewing;cleared=false;testFrame=null;controls();});
 $('restart').addEventListener('click',()=>{time=0;changed();});
-const currentFrame=()=>frameFor(points,$('pattern').value,variant(),time,Number($('brightness').value)/100,{message:$('message').value});
+const animationFrame=(version=variant())=>frameFor(points,$('pattern').value,version,time,Number($('brightness').value)/100,{message:$('message').value});
+let pendingFrames=new WeakMap(),lastAdapted=null;
+const currentFrame=()=>{
+  const frame=animationFrame();
+  // Keep the shaped preview on the same animation instant as a completed BLE
+  // frame, even when the selected board output uses the original version.
+  pendingFrames.set(frame,variant()==='adapted'?frame:animationFrame('adapted'));
+  return frame;
+};
 
 function drawCanvas(index,frame){
   const canvas=canvases[index],ctx=contexts[index],rect=canvas.getBoundingClientRect(),dpr=Math.min(devicePixelRatio||1,2);
@@ -73,6 +110,31 @@ function drawCanvas(index,frame){
   const h=Math.min(rect.height-36,(rect.width-36)/aspect),w=h*aspect,ox=(rect.width-w)/2,oy=(rect.height-h)/2;
   const colors=new Map(frame.map(led=>[led.position,quantize(led.rgb,transport?.level||3)]));
   const dotRadius=Math.max(2.2,Math.min(6,w/75)),handRadius=w*2.7/(right-left);
+  if(index===2){
+    if(!polygons)return;
+    const key=[w,h,ox,oy].join(',');
+    if(!pathCache||pathCache.key!==key||pathCache.polygons!==polygons){
+      const paths=new Map();
+      for(const [position,vertices] of polygons){
+        if(!vertices)continue;
+        const path=new Path2D();
+        for(let i=0;i<vertices.length;i+=2){const x=ox+vertices[i]*w,y=oy+vertices[i+1]*h;i?path.lineTo(x,y):path.moveTo(x,y);}
+        path.closePath();paths.set(position,path);
+      }
+      pathCache={key,polygons,paths};
+    }
+    ctx.lineJoin='round';
+    for(const p of points){
+      const rgb=colors.get(p.position)||[0,0,0],lit=rgb.some(c=>c>0),color=`rgb(${rgb.join(',')})`;
+      let path=pathCache.paths.get(p.position);
+      if(!path){path=new Path2D();path.arc(ox+p.u*w,oy+p.v*h,footprint(p,handRadius).radius,0,Math.PI*2);}
+      ctx.fillStyle='#191c16';ctx.fill(path);
+      ctx.strokeStyle=lit?color:'#333a2c';ctx.lineWidth=lit?Math.max(.7,w/(right-left)*(p.kind==='screw'?.32:.55)):.6;
+      ctx.shadowColor=color;ctx.shadowBlur=lit?w/(right-left)*(p.kind==='screw'?.9:1.6):0;
+      ctx.stroke(path);ctx.shadowBlur=0;
+    }
+    return;
+  }
   for(const p of points){
     const rgb=colors.get(p.position)||[0,0,0],lit=rgb.some(c=>c>0),color=`rgb(${rgb.join(',')})`,x=ox+p.u*w,y=oy+p.v*h;
     if(index===0){
@@ -91,12 +153,14 @@ function render(now){
   const dt=Math.min((now-lastTime)/1000,.15);lastTime=now;
   if(previewing||running())time+=dt*Number($('speed').value);
   if(board&&(dirty||previewing&&!running()&&!cleared)&&now-lastPaint>33&&!document.hidden){
-    const frame=cleared?[]:testFrame||running()&&lastSent||currentFrame();
-    drawCanvas(0,frame);drawCanvas(1,frame);dirty=false;lastPaint=now;
+    const frame=cleared?[]:testFrame||running()&&lastSent||animationFrame();
+    const adapted=cleared?[]:testFrame||running()&&lastAdapted||(variant()==='adapted'?frame:animationFrame('adapted'));
+    drawCanvas(0,frame);drawCanvas(1,frame);drawCanvas(2,adapted);dirty=false;lastPaint=now;
   }
   requestAnimationFrame(render);
 }
-new ResizeObserver(()=>{dirty=true;}).observe($('uniform'));
+const resizeObserver=new ResizeObserver(()=>{dirty=true;});
+for(const canvas of canvases)resizeObserver.observe(canvas);
 requestAnimationFrame(render);
 async function awake(){try{if(navigator.wakeLock)wakeLock=await navigator.wakeLock.request('screen');}catch{}}
 function releaseAwake(){try{wakeLock?.release().catch(()=>{});}catch{}wakeLock=null;}
@@ -122,7 +186,7 @@ $('connect').addEventListener('click',async()=>{
     transport=new BoardTransport(characteristic,level,onError,Number($('pacing').value));
     player=new BoardPlayer(transport,currentFrame,(frame,bytes)=>{
       if(device!==candidate)return;
-      lastSent=frame;dirty=true;frames++;
+      lastSent=frame;lastAdapted=pendingFrames.get(frame)||null;pendingFrames.delete(frame);dirty=true;frames++;
       status(`Sending ${variant()} ${$('pattern').selectedOptions[0].textContent.toLowerCase()}. ${(frames/((performance.now()-started)/1000)).toFixed(1)} frames/sec, ${bytes} bytes/frame.`);
     },onError,()=>Number($('fps').value));
     status(`Connected to ${candidate.name||'board'}. Test corners, then choose which pattern version to play.`);
@@ -136,7 +200,7 @@ $('test').addEventListener('click',async()=>{
   }catch(error){if(request===action)failed(error);}finally{if(request===action){busy=false;controls();}}
 });
 $('play').addEventListener('click',()=>{
-  action++;cleared=false;testFrame=null;lastSent=null;previewing=false;frames=0;started=performance.now();
+  action++;cleared=false;testFrame=null;lastSent=null;lastAdapted=null;pendingFrames=new WeakMap();previewing=false;frames=0;started=performance.now();
   player.start();awake();controls();status(`Sending ${variant()} pattern...`);
 });
 function stop(){

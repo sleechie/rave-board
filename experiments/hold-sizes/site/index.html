@@ -9,33 +9,34 @@
 <body>
 <main>
   <header><a href="https://raveboard.up.railway.app/rave" target="_blank" rel="noopener">Main Rave page</a><span>Unlisted experiment</span></header>
-  <section class="intro"><h1>Hold-size experiment</h1><p>Compare equal-sized dots with larger bolt-on rings and smaller screw-on rings. Both previews show the same frame.</p><p class="muted">This is a separate test deployment. Settings reset when you reload or close this tab. Disconnect the main Rave page before connecting here.</p></section>
+  <section class="intro"><h1>Hold-size experiment</h1><p>Compare dots, two-size rings, and traced hold shapes. The first two previews follow your pattern version; the hold shapes always show the adapted animation.</p><p class="muted">This is a separate test deployment. Settings reset when you reload or close this tab. Disconnect the main Rave page before connecting here.</p></section>
   <aside id="compatibility" hidden></aside>
   <section class="settings" aria-label="Experiment controls">
-    <div><label for="pattern">Animation</label><select id="pattern"></select><p class="field-note">All 12 effects, each with an Original and Adapted version.</p></div>
+    <div id="animation-slot"><div id="animation-control"><label for="pattern">Animation</label><select id="pattern"></select><p class="field-note">All 12 effects, each with an Original and Adapted version.</p></div></div>
     <fieldset class="version"><legend>Pattern version</legend><label><input type="radio" name="variant" value="original"> Original</label><label><input type="radio" name="variant" value="adapted" checked> Adapted</label></fieldset>
     <div><label for="size">Original board size</label><select id="size" disabled></select></div>
     <div id="message-field" hidden><label for="message">Scrolling message</label><input id="message" type="text" value="SEND IT!" maxlength="40" autocomplete="off" spellcheck="false"><p class="field-note">Letters, numbers, spaces, and ! ? . -</p></div>
     <div><label for="speed">Speed <output id="speed-value">1.0×</output></label><input id="speed" type="range" min="0.1" max="32" step="0.1" value="1"></div>
     <div><label for="brightness">Brightness sent to board <output id="brightness-value">85%</output></label><input id="brightness" type="range" min="35" max="100" value="85"></div>
-    <div><label for="foot-size">Foothold diameter in preview <output id="foot-size-value">45% of bolt-on</output></label><input id="foot-size" type="range" min="20" max="80" value="45"><p class="field-note">A visual estimate only. It does not change board output.</p></div>
+    <div><label for="foot-size">Foothold diameter in rings <output id="foot-size-value">45% of bolt-on</output></label><input id="foot-size" type="range" min="20" max="80" value="45"><p class="field-note">Changes only the two-size rings preview.</p></div>
     <fieldset id="sets"><legend>Installed holds</legend><label><input type="checkbox" value="1" checked> Bolt-ons</label><label><input type="checkbox" value="20" checked> Screw-ons</label></fieldset>
     <div class="preview-action"><button id="preview">Pause preview</button><button id="restart">Restart animation</button></div>
   </section>
   <div class="pattern-note"><strong id="variant-label">Adapted pattern</strong><span id="pattern-note"></span></div>
-  <section class="comparison" aria-label="Same frame in two previews">
-    <figure><figcaption><strong>Uniform dots</strong><span>Existing preview style</span></figcaption><canvas id="uniform" aria-label="Animation shown as equal-sized dots"></canvas></figure>
-    <figure><figcaption><strong>Two-size rings</strong><span>Approximate light footprints</span></figcaption><canvas id="sized" aria-label="Same animation with larger bolt-on rings and smaller screw-on rings"></canvas></figure>
+  <section class="comparison" aria-label="Three animation previews">
+    <figure><figcaption><strong>Uniform dots</strong><span class="selected-version">Adapted animation</span></figcaption><canvas id="uniform" aria-label="Selected animation shown as equal-sized dots"></canvas></figure>
+    <figure><figcaption><strong>Two-size rings</strong><span class="selected-version">Adapted animation</span></figcaption><canvas id="sized" aria-label="Selected animation with larger bolt-on rings and smaller screw-on rings"></canvas></figure>
+    <figure><figcaption><strong>Hold shapes</strong><span>Adapted animation</span></figcaption><canvas id="shaped" aria-label="Adapted animation on traced hold shapes in their installed positions"></canvas><p id="shape-status" class="shape-status" role="status" aria-live="polite">Loading hold shapes...</p></figure>
   </section>
   <div class="legend"><span><i class="bolt" aria-hidden="true"></i> Larger bolt-ons</span><span><i class="screw" aria-hidden="true"></i> Smaller screw-ons</span><span id="hold-count"></span></div>
-  <p class="caveat">The rings are a two-size approximation, not measured hold outlines or calibrated brightness. Hold shapes vary within both sets. Changing the pattern version changes the animation sent to the wall; changing the size estimate changes only the right-hand preview.</p>
+  <p class="caveat">Hold shapes are traced from board artwork; the light around their edges is approximate. Speed, brightness, pause, and clear apply to all three previews. The pattern version selects what plays on the wall. The size estimate affects only the two-size rings.</p>
   <details class="connection-settings"><summary>Connection settings</summary><div class="settings">
     <div><label for="protocol">Controller protocol</label><select id="protocol"><option value="auto">Auto</option><option value="3">API 3</option><option value="2">API 2</option></select></div>
     <div><label for="pacing">Bluetooth pacing</label><select id="pacing"><option value="0">Fast</option><option value="6">Balanced</option><option value="15">Gentle</option></select></div>
     <div><label for="fps">Target updates per second</label><select id="fps"><option value="30">30 fps</option><option value="15">15 fps</option><option value="4">4 fps</option></select></div>
   </div></details>
-  <section class="dock" aria-label="Playback controls"><div class="dock-top"><p id="status" role="status" aria-live="polite">Loading hold maps...</p><button id="disconnect" class="text-button" hidden>Disconnect now</button></div><div class="actions"><button id="connect" disabled>Connect board</button><button id="test" disabled>Test corners</button><button id="play" disabled>Play adapted on board</button><button id="stop">Stop & clear</button></div></section>
-  <footer><p>Separate branch, separate service, frozen baseline. No accounts, saved settings, uploads, or links from the main site.</p><a href="/THIRD-PARTY-LICENSE.txt">Protocol and map attribution</a></footer>
+  <section class="dock" aria-label="Playback controls"><div class="dock-top"><p id="status" role="status" aria-live="polite">Loading hold maps...</p><button id="disconnect" class="text-button" hidden>Disconnect now</button></div><div id="mobile-animation-slot"></div><div class="actions"><button id="connect" disabled>Connect board</button><button id="test" disabled>Test corners</button><button id="play" disabled>Play adapted on board</button><button id="stop">Stop & clear</button></div></section>
+  <footer><p>Separate branch, separate service, frozen baseline. No accounts, saved settings, uploads, or links from the main site.</p><div><a href="/THIRD-PARTY-LICENSE.txt">Protocol and maps</a><a href="/HOLD-SHAPES-NOTICE.txt">Hold shapes and attribution</a></div></footer>
 </main>
 <script type="module" src="/app.mjs"></script>
 </body>
